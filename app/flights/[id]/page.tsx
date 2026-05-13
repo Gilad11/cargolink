@@ -14,6 +14,11 @@ export default function FlightDetailPage({ params }: { params: Promise<{ id: str
   const [loading, setLoading] = useState(true);
   const [sharing, setSharing] = useState(false);
   const [updatingStatus, setUpdatingStatus] = useState(false);
+  const [editingTimes, setEditingTimes] = useState(false);
+  const [editDate, setEditDate] = useState('');
+  const [editDep, setEditDep] = useState('');
+  const [editArr, setEditArr] = useState('');
+  const [savingTimes, setSavingTimes] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -24,6 +29,29 @@ export default function FlightDetailPage({ params }: { params: Promise<{ id: str
     const role = document.cookie.split(';').find(c => c.trim().startsWith('cl_role='))?.split('=')[1];
     if (role === 'admin') setRole('admin');
   }, [id]);
+
+  function openEditTimes() {
+    if (!data) return;
+    setEditDate(data.flight.departureDate);
+    setEditDep(data.flight.departureTime);
+    setEditArr(data.flight.arrivalTime ?? '');
+    setEditingTimes(true);
+  }
+
+  async function saveTimes() {
+    setSavingTimes(true);
+    await fetch(`/api/flights/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ departureDate: editDate, departureTime: editDep, arrivalTime: editArr }),
+    });
+    setData(prev => prev ? {
+      ...prev,
+      flight: { ...prev.flight, departureDate: editDate, departureTime: editDep, arrivalTime: editArr },
+    } : prev);
+    setSavingTimes(false);
+    setEditingTimes(false);
+  }
 
   async function updateFlightStatus(status: Flight['status']) {
     setUpdatingStatus(true);
@@ -115,24 +143,24 @@ export default function FlightDetailPage({ params }: { params: Promise<{ id: str
           <div className="flex gap-2 flex-wrap">
             {role === 'admin' && (
               <>
-                {flight.status === 'planned' && (
-                  <button
-                    className="btn btn-success"
-                    disabled={updatingStatus}
-                    onClick={() => updateFlightStatus('active')}
-                  >
-                    הפעל טיסה
+                {flight.status !== 'active' && (
+                  <button className="btn btn-success" disabled={updatingStatus} onClick={() => updateFlightStatus('active')}>
+                    {flight.status === 'completed' ? 'החזר לפעיל' : 'הפעל טיסה'}
+                  </button>
+                )}
+                {flight.status !== 'planned' && (
+                  <button className="btn btn-secondary" disabled={updatingStatus} onClick={() => updateFlightStatus('planned')}>
+                    החזר לתכנון
                   </button>
                 )}
                 {flight.status === 'active' && (
-                  <button
-                    className="btn btn-secondary"
-                    disabled={updatingStatus}
-                    onClick={() => updateFlightStatus('completed')}
-                  >
+                  <button className="btn btn-secondary" disabled={updatingStatus} onClick={() => updateFlightStatus('completed')}>
                     סמן כהושלם
                   </button>
                 )}
+                <button className="btn btn-warning" onClick={openEditTimes}>
+                  עריכת זמנים
+                </button>
               </>
             )}
             <button className="btn btn-secondary" onClick={handleDownloadPDF}>
@@ -143,6 +171,33 @@ export default function FlightDetailPage({ params }: { params: Promise<{ id: str
             </button>
           </div>
         </div>
+
+        {/* Edit Times Panel */}
+        {editingTimes && (
+          <div className="card p-5 border-amber-200 bg-amber-50">
+            <h3 className="font-bold text-amber-800 mb-4 text-sm border-b border-amber-200 pb-2">עריכת זמני טיסה</h3>
+            <div className="grid sm:grid-cols-3 gap-3 mb-4">
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 mb-1">תאריך</label>
+                <input type="date" className="input" value={editDate} onChange={e => setEditDate(e.target.value)} />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 mb-1">שעת המראה</label>
+                <input type="time" className="input" value={editDep} onChange={e => setEditDep(e.target.value)} />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 mb-1">שעת נחיתה (אופציונלי)</label>
+                <input type="time" className="input" value={editArr} onChange={e => setEditArr(e.target.value)} />
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <button className="btn btn-success" disabled={savingTimes} onClick={saveTimes}>
+                {savingTimes ? 'שומר...' : 'שמור שינויים'}
+              </button>
+              <button className="btn btn-secondary" onClick={() => setEditingTimes(false)}>ביטול</button>
+            </div>
+          </div>
+        )}
 
         {/* Flight Info + Summary */}
         <div className="grid md:grid-cols-2 gap-4">

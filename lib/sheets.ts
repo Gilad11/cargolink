@@ -230,8 +230,11 @@ export async function updateFlight(id: string, fields: Partial<Flight>) {
 
   const c = FLIGHT_COLS;
   const updates: { col: number; value: string }[] = [];
-  if (fields.status) updates.push({ col: c.STATUS, value: fields.status });
-  if (fields.notes !== undefined) updates.push({ col: c.NOTES, value: fields.notes });
+  if (fields.status !== undefined)        updates.push({ col: c.STATUS,         value: fields.status });
+  if (fields.notes !== undefined)         updates.push({ col: c.NOTES,          value: fields.notes });
+  if (fields.departureDate !== undefined) updates.push({ col: c.DEPARTURE_DATE, value: fields.departureDate });
+  if (fields.departureTime !== undefined) updates.push({ col: c.DEPARTURE_TIME, value: fields.departureTime });
+  if (fields.arrivalTime !== undefined)   updates.push({ col: c.ARRIVAL_TIME,   value: fields.arrivalTime });
 
   for (const u of updates) {
     const colLetter = String.fromCharCode(65 + u.col);
