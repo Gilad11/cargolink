@@ -140,11 +140,11 @@ export async function GET(_: NextRequest, { params }: { params: Promise<{ flight
       const files = dgFileIds(item);
       for (const { fileId, label } of files) {
         try {
-          // Separator page
-          await makeSeparatorPage(merged, item, label);
-
-          // Fetch the actual certificate from Drive
+          // Fetch first — only add pages if this succeeds
           const { bytes, mimeType } = await fetchDriveFile(fileId);
+
+          // Separator page (added only after successful fetch)
+          await makeSeparatorPage(merged, item, label);
 
           if (mimeType.includes('pdf')) {
             const certDoc = await PDFDocument.load(bytes);
@@ -173,8 +173,8 @@ export async function GET(_: NextRequest, { params }: { params: Promise<{ flight
             });
           }
         } catch (err) {
+          // File unavailable — log and skip entirely (no orphaned separator page)
           console.error(`Could not attach DG file ${fileId} for ${item.fullName}:`, err);
-          // Still add the separator page (already inserted), skip the content page
         }
       }
     }
