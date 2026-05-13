@@ -1,6 +1,7 @@
 import { google } from 'googleapis';
 import { CargoRequest, Flight } from './types';
 import { CARGO_COLS, FLIGHT_COLS, SHEET_NAMES } from './constants';
+import { Readable } from 'stream';
 
 function isConfigured(): boolean {
   const json = process.env.GOOGLE_SERVICE_ACCOUNT_JSON ?? '';
@@ -16,7 +17,10 @@ function getAuth() {
   const credentials = JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT_JSON!);
   return new google.auth.GoogleAuth({
     credentials,
-    scopes: ['https://www.googleapis.com/auth/spreadsheets'],
+    scopes: [
+      'https://www.googleapis.com/auth/spreadsheets',
+      'https://www.googleapis.com/auth/drive.readonly',
+    ],
   });
 }
 
@@ -238,4 +242,44 @@ export async function updateFlight(id: string, fields: Partial<Flight>) {
       requestBody: { values: [[u.value]] },
     });
   }
+}
+
+// ─── Drive file fetching ──────────────────────────────────────────────────────
+
+/** Extract a Google Drive file ID from any share URL format. */
+export function extractDriveFileId(url: string): string | null {
+  const patterns = [
+    /[?&]id=([^&\s]+)/,
+    /\/file\/d\/([^/\s?]+)/,
+    /\/d\/([^/\s?]+)/,
+  ];
+  for (const re of patterns) {
+    const m = url.match(re);
+    if (m?.[1]) return m[1];
+  }
+  return null;
+}
+
+/** Fetch a file from Google Drive by file ID using the service account.
+ *  Returns the raw bytes and mime type. */
+export async function fetchDriveFile(fileId: string): Promise<{ bytes: Uint8Array; mimeType: string }> {
+  const drive = google.drive({ version: 'v3', auth: getAuth() });
+
+  const meta = await drive.files.get({ fileId, fields: 'mimeType,name' });
+  const mimeType = meta.data.mimeType ?? 'application/octet-stream';
+
+  const res = await drive.files.get(
+    { fileId, alt: 'media' },
+    { responseType: 'stream' },
+  );
+
+  const chunks: Buffer[] = [];
+  await new Promise<void>((resolve, reject) => {
+    const stream = res.data as unknown as Readable;
+    stream.on('data', (chunk: Buffer) => chunks.push(chunk));
+    stream.on('end', resolve);
+    stream.on('error', reject);
+  });
+
+  return { bytes: new Uint8Array(Buffer.concat(chunks)), mimeType };
 }
