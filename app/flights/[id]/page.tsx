@@ -243,7 +243,7 @@ export default function FlightDetailPage({ params }: { params: Promise<{ id: str
                 <thead>
                   <tr>
                     <th>#</th>
-                    <th>תיאור (אנגלית)</th>
+                    <th>תיאור / קטגוריה</th>
                     <th>יחידה</th>
                     <th>קטגוריה</th>
                     <th>כמות</th>
@@ -258,7 +258,7 @@ export default function FlightDetailPage({ params }: { params: Promise<{ id: str
                     <tr key={req.requestId} onClick={() => router.push(`/cargo/${req.requestId}`)}>
                       <td className="text-slate-400 text-xs">{i + 1}</td>
                       <td className="font-medium max-w-48">
-                        <div className="truncate">{req.cargoDescription}</div>
+                        <div className="truncate">{req.cargoDescription || req.categoryDetails || req.equipmentCategory}</div>
                       </td>
                       <td className="text-slate-500 text-xs">{req.unit}</td>
                       <td className="text-xs text-slate-600">{req.equipmentCategory}</td>

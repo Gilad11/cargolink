@@ -100,12 +100,24 @@ export default function CargoDetailPage({ params }: { params: Promise<{ id: stri
             <h3 className="font-bold text-slate-700 mb-3 text-sm border-b border-slate-100 pb-2">פרטי טיסה (לפי הגשה)</h3>
             <dl className="space-y-2">
               <InfoRow label="כיוון" value={req.flightDirection} />
-              <InfoRow label="תאריך" value={req.flightDate} />
-              <InfoRow label="שעת המראה" value={req.departureTime} />
-              <InfoRow label="שדה יציאה" value={req.departureAirport} />
-              <InfoRow label="שדה יעד" value={req.destinationAirport} />
+              <InfoRow label="תאריך מבוקש" value={req.flightDate} />
               <InfoRow label="סוג מטוס" value={req.aircraftType} />
             </dl>
+            {/* Assigned flight details */}
+            {req.assignedFlightId && (() => {
+              const f = flights.find(f => f.id === req.assignedFlightId);
+              return f ? (
+                <div className="mt-3 pt-3 border-t border-slate-100">
+                  <div className="text-xs font-semibold text-blue-600 mb-2">✈ טיסה משויכת: {f.flightNumber}</div>
+                  <dl className="space-y-1.5">
+                    <InfoRow label="מסלול" value={`${f.departureAirport} → ${f.destinationAirport}`} />
+                    <InfoRow label="תאריך" value={f.departureDate} />
+                    <InfoRow label="שעת המראה" value={f.departureTime ? `${f.departureTime} (UAE)` : '—'} />
+                    {f.arrivalTime && <InfoRow label="שעת נחיתה" value={`${f.arrivalTime} (UAE)`} />}
+                  </dl>
+                </div>
+              ) : null;
+            })()}
           </div>
 
           {/* Cargo Details */}
@@ -119,12 +131,9 @@ export default function CargoDetailPage({ params }: { params: Promise<{ id: stri
               <InfoRow label="משקל לאריזה" value={`${req.weightPerPackage} ק"ג`} />
               <InfoRow label='משקל כולל' value={`${req.totalWeight} ק"ג`} />
               <InfoRow label="סוג אריזה" value={req.packagingType} />
-            </div>
-            <div className="mt-3">
-              <div className="text-xs text-slate-500 mb-1">תיאור המטען (אנגלית):</div>
-              <div className="bg-slate-50 rounded-xl p-3 text-sm text-slate-800 font-medium ltr text-left">
-                {req.cargoDescription}
-              </div>
+              {(req.cargoDescription) && (
+                <InfoRow label="תיאור מטען" value={req.cargoDescription} />
+              )}
             </div>
           </div>
 

@@ -72,7 +72,7 @@ export function rowToCargoRequest(row: string[], rowIndex: number): CargoRequest
     fullName: col(row, c.FULL_NAME),
     unit: col(row, c.UNIT),
     phone: col(row, c.PHONE),
-    email: col(row, c.EMAIL),
+    email: col(row, c.EMAIL) || col(row, c.EMAIL_AUTO),
     flightDirection: col(row, c.FLIGHT_DIRECTION),
     flightDate: col(row, c.FLIGHT_DATE),
     departureTime: col(row, c.DEPARTURE_TIME),

@@ -33,7 +33,7 @@ export default function CargoPage() {
   const filtered = cargo.filter(req => {
     const matchTab = tab === 'all' || req.status === tab;
     const q = search.toLowerCase();
-    const matchSearch = !q || [req.fullName, req.unit, req.cargoDescription, req.requestId]
+    const matchSearch = !q || [req.fullName, req.unit, req.cargoDescription, req.categoryDetails, req.equipmentCategory, req.requestId]
       .some(f => f?.toLowerCase().includes(q));
     return matchTab && matchSearch;
   });
@@ -103,7 +103,7 @@ export default function CargoPage() {
                       </td>
                       <td className="text-slate-600">{req.unit}</td>
                       <td>
-                        <div className="max-w-52 truncate text-slate-700">{req.cargoDescription}</div>
+                        <div className="max-w-52 truncate text-slate-700">{req.cargoDescription || req.categoryDetails || '—'}</div>
                         <div className="text-xs text-slate-400">{req.equipmentCategory}</div>
                       </td>
                       <td className="whitespace-nowrap text-slate-600 text-sm">{req.flightDate}</td>

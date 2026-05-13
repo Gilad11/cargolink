@@ -34,7 +34,7 @@ export const CARGO_COLS = {
   CONFIRMATION: 24,
   // Col 25 (Z)  – empty artifact column (skip)
   PACKAGING_TYPE: 26,     // new submissions (post-form-edit, col AA)
-  // Col 27 (AB) – "כתובת אימייל" auto-added by Google Forms (skip)
+  EMAIL_AUTO: 27,         // auto-collected by Google Forms (always filled)
   // Col 28 (AC) – spare
   // Written by web app (start at AD=29 to avoid form columns)
   REQUEST_ID: 29,
