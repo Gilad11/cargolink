@@ -240,7 +240,10 @@ export default function FlightDetailPage({ params }: { params: Promise<{ id: str
             <div className="divide-y divide-slate-50">
               {dgItems.map(req => (
                 <div key={req.requestId} className="p-4">
-                  <div className="font-medium text-slate-800 mb-1">{req.cargoDescription}</div>
+                  <div className="flex items-start justify-between gap-2 flex-wrap mb-1">
+                    <div className="font-medium text-slate-800">{req.cargoDescription}</div>
+                    <div className="text-xs text-slate-400 whitespace-nowrap">{req.fullName} · {req.unit}</div>
+                  </div>
                   <div className="text-sm text-slate-500 space-y-0.5">
                     <div>סיווג: <span className="font-medium text-slate-700">{req.dgClassification || '—'}</span></div>
                     <div>תיאור: <span className="font-medium text-slate-700">{req.dgDescription || '—'}</span></div>
