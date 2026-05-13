@@ -43,6 +43,38 @@ function getHebrewFontBytes(): Uint8Array {
   return _hebrewFontBytes;
 }
 
+// Seal image loaded once and reused
+let _sealBytes: Uint8Array | null = null;
+function getSealBytes(): Uint8Array {
+  if (!_sealBytes) {
+    _sealBytes = new Uint8Array(
+      readFileSync(join(process.cwd(), 'public', 'images', 'seal.jpg'))
+    );
+  }
+  return _sealBytes;
+}
+
+/** Stamp the official seal onto the first page of the manifest (bottom-right). */
+async function stampSeal(pdfDoc: PDFDocument) {
+  const pages = pdfDoc.getPages();
+  if (pages.length === 0) return;
+  const page = pages[0];
+  const { width, height } = page.getSize();
+
+  const sealImage = await pdfDoc.embedJpg(getSealBytes());
+  const sealSize = 130; // points (~46mm) — prominent but not overpowering
+  const scaled = sealImage.scaleToFit(sealSize, sealSize);
+
+  const margin = 28;
+  page.drawImage(sealImage, {
+    x: width - scaled.width - margin,
+    y: margin,
+    width: scaled.width,
+    height: scaled.height,
+    opacity: 0.92,
+  });
+}
+
 /** Create a simple separator page identifying the upcoming DG certificate. */
 async function makeSeparatorPage(
   pdfDoc: PDFDocument,
@@ -147,6 +179,9 @@ export async function GET(_: NextRequest, { params }: { params: Promise<{ flight
     const manifestDoc = await PDFDocument.load(manifestBuffer);
     const manifestPages = await merged.copyPages(manifestDoc, manifestDoc.getPageIndices());
     manifestPages.forEach(p => merged.addPage(p));
+
+    // Stamp official seal on the first (manifest) page
+    await stampSeal(merged);
 
     // 3. Append DG certificates
     const dgItems = cargo.filter(c => c.containsDG);
