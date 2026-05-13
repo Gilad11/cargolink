@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { readFileSync } from 'fs';
+import { join } from 'path';
 import { renderToBuffer } from '@react-pdf/renderer';
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
+import fontkit from '@pdf-lib/fontkit';
 import { getFlightById, getCargoRequestsByFlight, extractDriveFileId, fetchDriveFile } from '@/lib/sheets';
 import { ManifestDocument } from '@/components/ManifestPDF';
-import { ManifestData } from '@/lib/types';
-import { CargoRequest } from '@/lib/types';
+import { ManifestData, CargoRequest } from '@/lib/types';
 
 export const runtime = 'nodejs';
 
@@ -30,14 +32,26 @@ function dgFileIds(item: CargoRequest): { fileId: string; label: string }[] {
   return results;
 }
 
+// Hebrew-capable font loaded once and reused
+let _hebrewFontBytes: Uint8Array | null = null;
+function getHebrewFontBytes(): Uint8Array {
+  if (!_hebrewFontBytes) {
+    _hebrewFontBytes = new Uint8Array(
+      readFileSync(join(process.cwd(), 'public', 'fonts', 'Alef-Regular.ttf'))
+    );
+  }
+  return _hebrewFontBytes;
+}
+
 /** Create a simple separator page identifying the upcoming DG certificate. */
 async function makeSeparatorPage(
   pdfDoc: PDFDocument,
   item: CargoRequest,
   docLabel: string,
 ) {
-  const font = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
-  const regular = await pdfDoc.embedFont(StandardFonts.Helvetica);
+  const fontBytes = getHebrewFontBytes();
+  const font    = await pdfDoc.embedFont(fontBytes, { subset: true });
+  const regular = font; // same font for all text — Alef supports Latin too
   const page = pdfDoc.addPage([841.89, 595.28]); // A4 landscape
 
   const { width, height } = page.getSize();
@@ -127,6 +141,7 @@ export async function GET(_: NextRequest, { params }: { params: Promise<{ flight
 
     // 2. Start building the merged PDF
     const merged = await PDFDocument.create();
+    merged.registerFontkit(fontkit);
 
     // Copy manifest pages
     const manifestDoc = await PDFDocument.load(manifestBuffer);
