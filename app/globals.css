@@ -1,0 +1,138 @@
+@import "tailwindcss";
+
+@layer base {
+  *, *::before, *::after { box-sizing: border-box; }
+  html { font-family: 'Heebo', 'Segoe UI', system-ui, sans-serif; }
+  body { background-color: #f4f6f8; color: #0f172a; min-height: 100vh; }
+}
+
+/* ─── Status badges ───────────────────────────────── */
+.badge-pending   { background:#f1f5f9; color:#475569; border:1px solid #cbd5e1; }
+.badge-missing   { background:#fff7ed; color:#c2410c; border:1px solid #fed7aa; }
+.badge-approved  { background:#f0fdf4; color:#15803d; border:1px solid #bbf7d0; }
+.badge-rejected  { background:#fef2f2; color:#b91c1c; border:1px solid #fecaca; }
+.badge-planned   { background:#f1f5f9; color:#334155; border:1px solid #cbd5e1; }
+.badge-active    { background:#f0fdf4; color:#15803d; border:1px solid #bbf7d0; }
+.badge-completed { background:#f8fafc; color:#64748b; border:1px solid #e2e8f0; }
+
+/* ─── Card ────────────────────────────────────────── */
+.card {
+  background: white;
+  border-radius: .75rem;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 2px 0 rgb(0 0 0/.04);
+}
+
+/* ─── Table ───────────────────────────────────────── */
+.data-table { width: 100%; border-collapse: collapse; }
+.data-table th {
+  background: #f8fafc;
+  padding: .625rem 1rem;
+  text-align: right;
+  font-size: .7rem;
+  font-weight: 700;
+  color: #94a3b8;
+  border-bottom: 1px solid #e2e8f0;
+  white-space: nowrap;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+.data-table td {
+  padding: .75rem 1rem;
+  border-bottom: 1px solid #f1f5f9;
+  font-size: .875rem;
+  color: #1e293b;
+}
+.data-table tr:last-child td { border-bottom: none; }
+.data-table tr:hover td { background: #f8fafc; cursor: pointer; }
+.data-table tfoot td { background: #f8fafc; font-size: .875rem; }
+
+/* ─── Buttons ─────────────────────────────────────── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: .375rem;
+  font-weight: 600;
+  border-radius: .5rem;
+  padding: .438rem 1rem;
+  font-size: .8125rem;
+  transition: all .12s;
+  cursor: pointer;
+  border: none;
+  white-space: nowrap;
+  font-family: inherit;
+  letter-spacing: .01em;
+}
+.btn-primary   { background: #1e293b; color: white; }
+.btn-primary:hover { background: #0f172a; }
+.btn-success   { background: #15803d; color: white; }
+.btn-success:hover { background: #166534; }
+.btn-danger    { background: #b91c1c; color: white; }
+.btn-danger:hover { background: #991b1b; }
+.btn-warning   { background: #92400e; color: white; }
+.btn-warning:hover { background: #78350f; }
+.btn-secondary {
+  background: white;
+  color: #374151;
+  border: 1px solid #d1d5db;
+}
+.btn-secondary:hover { background: #f9fafb; }
+.btn-whatsapp  { background: #16a34a; color: white; }
+.btn-whatsapp:hover { background: #15803d; }
+.btn:disabled  { opacity: .45; cursor: not-allowed; }
+
+/* ─── Input ───────────────────────────────────────── */
+.input {
+  width: 100%;
+  border: 1px solid #d1d5db;
+  border-radius: .5rem;
+  padding: .5rem .75rem;
+  font-size: .875rem;
+  outline: none;
+  font-family: inherit;
+  transition: border-color .12s;
+  background: white;
+  color: #0f172a;
+}
+.input:focus { border-color: #1e293b; box-shadow: 0 0 0 2px rgb(30 41 59/.08); }
+.input::placeholder { color: #9ca3af; }
+
+/* ─── DG badge ────────────────────────────────────── */
+.dg-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: .2rem;
+  background: #fef2f2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+  border-radius: .25rem;
+  padding: .1rem .4rem;
+  font-size: .7rem;
+  font-weight: 700;
+  letter-spacing: .04em;
+}
+
+/* ─── Stat card ───────────────────────────────────── */
+.stat-card {
+  background: white;
+  border-radius: .75rem;
+  border: 1px solid #e2e8f0;
+  padding: 1.25rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: .125rem;
+}
+
+/* ─── Alert ───────────────────────────────────────── */
+.alert {
+  border-radius: .5rem;
+  padding: .625rem 1rem;
+  font-size: .8125rem;
+  display: flex;
+  align-items: flex-start;
+  gap: .5rem;
+  border-right: 3px solid;
+}
+.alert-warning { background: #fffbeb; border-color: #f59e0b; color: #78350f; border-left: none; }
+.alert-danger  { background: #fef2f2; border-color: #ef4444; color: #991b1b; border-left: none; }
+.alert-info    { background: #f8fafc; border-color: #64748b; color: #334155; border-left: none; }
