@@ -267,9 +267,23 @@ export default function FlightDetailPage({ params }: { params: Promise<{ id: str
   );
 }
 
+/** Convert any Google Drive share URL to a direct /file/d/ID/view viewer URL */
+function normalizeDriveUrl(url: string): string {
+  const patterns = [
+    /[?&]id=([^&\s]+)/,
+    /\/file\/d\/([^/\s?]+)/,
+    /\/d\/([^/\s?]+)/,
+  ];
+  for (const re of patterns) {
+    const m = url.match(re);
+    if (m?.[1]) return `https://drive.google.com/file/d/${m[1]}/view`;
+  }
+  return url;
+}
+
 /** Renders one link per Drive URL (Google Forms may store multiple comma-separated URLs). */
 function DriveLinks({ raw, label }: { raw: string; label: string }) {
-  const urls = raw.split(',').map(u => u.trim()).filter(Boolean);
+  const urls = raw.split(',').map(u => u.trim()).filter(Boolean).map(normalizeDriveUrl);
   return (
     <span className="inline-flex flex-wrap gap-2 mt-1">
       {urls.map((url, i) => (

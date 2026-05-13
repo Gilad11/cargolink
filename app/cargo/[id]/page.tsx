@@ -250,7 +250,22 @@ export default function CargoDetailPage({ params }: { params: Promise<{ id: stri
 }
 
 function splitUrls(raw: string): string[] {
-  return raw.split(',').map(u => u.trim()).filter(Boolean);
+  return raw.split(',').map(u => u.trim()).filter(Boolean).map(normalizeDriveUrl);
+}
+
+/** Convert any Google Drive share URL to a direct /file/d/ID/view viewer URL */
+function normalizeDriveUrl(url: string): string {
+  // Extract file ID from various Drive URL formats
+  const patterns = [
+    /[?&]id=([^&\s]+)/,       // ?id=FILE_ID  or  &id=FILE_ID
+    /\/file\/d\/([^/\s?]+)/,  // /file/d/FILE_ID/
+    /\/d\/([^/\s?]+)/,        // generic /d/FILE_ID
+  ];
+  for (const re of patterns) {
+    const m = url.match(re);
+    if (m?.[1]) return `https://drive.google.com/file/d/${m[1]}/view`;
+  }
+  return url; // fallback: return as-is
 }
 
 function InfoRow({ label, value }: { label: string; value: string }) {
