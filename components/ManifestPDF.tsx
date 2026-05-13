@@ -1,27 +1,34 @@
 import {
   Document, Page, Text, View, StyleSheet, Font,
 } from '@react-pdf/renderer';
+import { join } from 'path';
 import { ManifestData } from '@/lib/types';
 
+// Register Hebrew-capable font for the entire manifest document
+Font.register({
+  family: 'Alef',
+  src: join(process.cwd(), 'public', 'fonts', 'Alef-Regular.ttf'),
+});
+
 const S = StyleSheet.create({
-  page:         { fontFamily: 'Helvetica', fontSize: 9, padding: 32, color: '#1e293b', backgroundColor: '#ffffff' },
+  page:         { fontFamily: 'Alef', fontSize: 9, padding: 32, color: '#1e293b', backgroundColor: '#ffffff' },
   header:       { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16, paddingBottom: 12, borderBottom: '2px solid #1e40af' },
-  logo:         { fontSize: 18, fontFamily: 'Helvetica-Bold', color: '#1e40af' },
+  logo:         { fontSize: 18, fontFamily: 'Alef', color: '#1e40af' },
   logoSub:      { fontSize: 8, color: '#64748b', marginTop: 2 },
   manifestNum:  { textAlign: 'right', fontSize: 8, color: '#64748b' },
-  manifestVal:  { fontSize: 11, fontFamily: 'Helvetica-Bold', color: '#1e293b', marginTop: 2 },
+  manifestVal:  { fontSize: 11, fontFamily: 'Alef', color: '#1e293b', marginTop: 2 },
 
   section:      { marginBottom: 14 },
-  sectionTitle: { fontSize: 10, fontFamily: 'Helvetica-Bold', color: '#1e40af', marginBottom: 6, paddingBottom: 3, borderBottom: '1px solid #e2e8f0' },
+  sectionTitle: { fontSize: 10, fontFamily: 'Alef', color: '#1e40af', marginBottom: 6, paddingBottom: 3, borderBottom: '1px solid #e2e8f0' },
 
   row:          { flexDirection: 'row', marginBottom: 3 },
   label:        { width: 120, color: '#64748b' },
-  value:        { flex: 1, fontFamily: 'Helvetica-Bold', color: '#1e293b' },
+  value:        { flex: 1, fontFamily: 'Alef', color: '#1e293b' },
 
   // Summary boxes
   summaryRow:   { flexDirection: 'row', gap: 8, marginBottom: 14 },
   summaryBox:   { flex: 1, border: '1px solid #e2e8f0', borderRadius: 6, padding: 8, backgroundColor: '#f8fafc' },
-  summaryNum:   { fontSize: 16, fontFamily: 'Helvetica-Bold', color: '#1e293b', marginBottom: 2 },
+  summaryNum:   { fontSize: 16, fontFamily: 'Alef', color: '#1e293b', marginBottom: 2 },
   summaryLabel: { fontSize: 7, color: '#64748b' },
 
   // Table
@@ -30,14 +37,14 @@ const S = StyleSheet.create({
   tableRow:     { flexDirection: 'row', padding: '4 6', borderBottom: '1px solid #f1f5f9' },
   tableRowAlt:  { flexDirection: 'row', padding: '4 6', borderBottom: '1px solid #f1f5f9', backgroundColor: '#f8fafc' },
   tableFooter:  { flexDirection: 'row', padding: '5 6', backgroundColor: '#e2e8f0', borderRadius: '0 0 4 4' },
-  th:           { fontFamily: 'Helvetica-Bold', fontSize: 7.5, color: 'white' },
+  th:           { fontFamily: 'Alef', fontSize: 7.5, color: 'white' },
   td:           { fontSize: 8, color: '#1e293b' },
-  tdBold:       { fontSize: 8, fontFamily: 'Helvetica-Bold', color: '#1e293b' },
+  tdBold:       { fontSize: 8, fontFamily: 'Alef', color: '#1e293b' },
 
   // DG Section
   dgSection:    { marginBottom: 14, border: '1px solid #fecaca', borderRadius: 6, overflow: 'hidden' },
   dgHeader:     { backgroundColor: '#fef2f2', padding: '5 8', borderBottom: '1px solid #fecaca' },
-  dgTitle:      { fontFamily: 'Helvetica-Bold', fontSize: 9, color: '#dc2626' },
+  dgTitle:      { fontFamily: 'Alef', fontSize: 9, color: '#dc2626' },
   dgRow:        { flexDirection: 'row', padding: '4 8', borderBottom: '1px solid #fef2f2' },
 
   // Footer
@@ -47,7 +54,7 @@ const S = StyleSheet.create({
   // Status badge
   approved:     { backgroundColor: '#dcfce7', color: '#166534', padding: '1 5', borderRadius: 3, fontSize: 7.5 },
 
-  dgBadge:      { backgroundColor: '#fef2f2', color: '#dc2626', padding: '1 5', borderRadius: 3, fontSize: 7.5, fontFamily: 'Helvetica-Bold' },
+  dgBadge:      { backgroundColor: '#fef2f2', color: '#dc2626', padding: '1 5', borderRadius: 3, fontSize: 7.5, fontFamily: 'Alef' },
 });
 
 // Column widths for cargo table
@@ -135,7 +142,7 @@ export function ManifestDocument({ data }: { data: ManifestData }) {
           {cargo.map((item, i) => (
             <View key={item.requestId} style={i % 2 === 0 ? S.tableRow : S.tableRowAlt}>
               <Text style={[S.td, { width: COL.num }]}>{i + 1}</Text>
-              <Text style={[S.tdBold, { width: COL.desc }]}>{item.cargoDescription}</Text>
+              <Text style={[S.tdBold, { width: COL.desc }]}>{item.cargoDescription || item.categoryDetails || '—'}</Text>
               <Text style={[S.td, { width: COL.unit }]}>{item.unit}</Text>
               <Text style={[S.td, { width: COL.cat }]}>{item.equipmentCategory}</Text>
               <Text style={[S.td, { width: COL.qty, textAlign: 'center' }]}>{item.packageCount}</Text>
@@ -160,10 +167,11 @@ export function ManifestDocument({ data }: { data: ManifestData }) {
             </View>
             {dgItems.map(item => (
               <View key={item.requestId} style={S.dgRow}>
-                <Text style={[S.tdBold, { width: '30%' }]}>{item.cargoDescription}</Text>
-                <Text style={[S.td, { width: '20%' }]}>Class: {item.dgClassification || '—'}</Text>
-                <Text style={[S.td, { width: '30%' }]}>{item.dgDescription || '—'}</Text>
-                <Text style={[S.td, { width: '20%', color: item.dgDocumentsUrl ? '#16a34a' : '#dc2626' }]}>
+                <Text style={[S.tdBold, { width: '25%' }]}>{item.fullName} · {item.unit}</Text>
+                <Text style={[S.td, { width: '25%' }]}>{item.cargoDescription || item.categoryDetails || '—'}</Text>
+                <Text style={[S.td, { width: '15%' }]}>Class: {item.dgClassification || '—'}</Text>
+                <Text style={[S.td, { width: '20%' }]}>{item.dgDescription || '—'}</Text>
+                <Text style={[S.td, { width: '15%', color: item.dgDocumentsUrl ? '#16a34a' : '#dc2626' }]}>
                   Docs: {item.dgDocumentsUrl ? 'Attached' : 'Missing'}
                 </Text>
               </View>
