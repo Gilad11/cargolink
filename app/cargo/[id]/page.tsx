@@ -136,17 +136,17 @@ export default function CargoDetailPage({ params }: { params: Promise<{ id: stri
                 <InfoRow label="סיווג" value={req.dgClassification || '—'} />
                 <InfoRow label="תיאור" value={req.dgDescription || '—'} />
               </div>
-              <div className="flex gap-3 mt-3">
-                {req.dgDocumentsUrl && (
-                  <a href={req.dgDocumentsUrl} target="_blank" rel="noopener" className="btn btn-secondary text-xs py-1.5">
-                    אישורי DG
+              <div className="flex flex-wrap gap-2 mt-3">
+                {req.dgDocumentsUrl && splitUrls(req.dgDocumentsUrl).map((url, i, arr) => (
+                  <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="btn btn-secondary text-xs py-1.5">
+                    אישורי DG{arr.length > 1 ? ` (${i + 1})` : ''}
                   </a>
-                )}
-                {req.msdsDocumentsUrl && (
-                  <a href={req.msdsDocumentsUrl} target="_blank" rel="noopener" className="btn btn-secondary text-xs py-1.5">
-                    MSDS
+                ))}
+                {req.msdsDocumentsUrl && splitUrls(req.msdsDocumentsUrl).map((url, i, arr) => (
+                  <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="btn btn-secondary text-xs py-1.5">
+                    MSDS{arr.length > 1 ? ` (${i + 1})` : ''}
                   </a>
-                )}
+                ))}
               </div>
             </div>
           )}
@@ -247,6 +247,10 @@ export default function CargoDetailPage({ params }: { params: Promise<{ id: stri
       </main>
     </div>
   );
+}
+
+function splitUrls(raw: string): string[] {
+  return raw.split(',').map(u => u.trim()).filter(Boolean);
 }
 
 function InfoRow({ label, value }: { label: string; value: string }) {

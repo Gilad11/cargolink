@@ -245,9 +245,10 @@ export default function FlightDetailPage({ params }: { params: Promise<{ id: str
                     <div>סיווג: <span className="font-medium text-slate-700">{req.dgClassification || '—'}</span></div>
                     <div>תיאור: <span className="font-medium text-slate-700">{req.dgDescription || '—'}</span></div>
                     {req.dgDocumentsUrl && (
-                      <a href={req.dgDocumentsUrl} target="_blank" rel="noopener" className="text-slate-600 hover:underline text-xs">
-                        פתח אישורים
-                      </a>
+                      <DriveLinks raw={req.dgDocumentsUrl} label="אישורי DG" />
+                    )}
+                    {req.msdsDocumentsUrl && (
+                      <DriveLinks raw={req.msdsDocumentsUrl} label="MSDS" />
                     )}
                   </div>
                 </div>
@@ -263,6 +264,26 @@ export default function FlightDetailPage({ params }: { params: Promise<{ id: str
 
       </main>
     </div>
+  );
+}
+
+/** Renders one link per Drive URL (Google Forms may store multiple comma-separated URLs). */
+function DriveLinks({ raw, label }: { raw: string; label: string }) {
+  const urls = raw.split(',').map(u => u.trim()).filter(Boolean);
+  return (
+    <span className="inline-flex flex-wrap gap-2 mt-1">
+      {urls.map((url, i) => (
+        <a
+          key={i}
+          href={url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-blue-600 hover:underline text-xs"
+        >
+          {label}{urls.length > 1 ? ` (${i + 1})` : ''}
+        </a>
+      ))}
+    </span>
   );
 }
 
