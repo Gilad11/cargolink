@@ -97,17 +97,19 @@ export function rowToCargoRequest(row: string[], rowIndex: number): CargoRequest
 
 export async function updateCargoRequest(
   rowIndex: number,
-  fields: Partial<{ status: string; adminNotes: string; assignedFlightId: string; requestId: string }>
+  fields: Partial<{ status: string; adminNotes: string; assignedFlightId: string; requestId: string; dgClassification: string; dgDescription: string }>
 ) {
   const sheets = getSheetsClient();
   const c = CARGO_COLS;
 
   const updates: { colIndex: number; value: string }[] = [];
 
-  if (fields.requestId !== undefined)      updates.push({ colIndex: c.REQUEST_ID,        value: fields.requestId });
-  if (fields.status !== undefined)          updates.push({ colIndex: c.STATUS,             value: fields.status });
-  if (fields.adminNotes !== undefined)      updates.push({ colIndex: c.ADMIN_NOTES,        value: fields.adminNotes });
-  if (fields.assignedFlightId !== undefined) updates.push({ colIndex: c.ASSIGNED_FLIGHT_ID, value: fields.assignedFlightId });
+  if (fields.requestId !== undefined)        updates.push({ colIndex: c.REQUEST_ID,        value: fields.requestId });
+  if (fields.status !== undefined)            updates.push({ colIndex: c.STATUS,             value: fields.status });
+  if (fields.adminNotes !== undefined)        updates.push({ colIndex: c.ADMIN_NOTES,        value: fields.adminNotes });
+  if (fields.assignedFlightId !== undefined)  updates.push({ colIndex: c.ASSIGNED_FLIGHT_ID, value: fields.assignedFlightId });
+  if (fields.dgClassification !== undefined)  updates.push({ colIndex: c.DG_CLASSIFICATION,  value: fields.dgClassification });
+  if (fields.dgDescription !== undefined)     updates.push({ colIndex: c.DG_DESCRIPTION,     value: fields.dgDescription });
 
   for (const u of updates) {
     await sheets.spreadsheets.values.update({

@@ -14,6 +14,8 @@ export default function CargoDetailPage({ params }: { params: Promise<{ id: stri
   const [saving, setSaving] = useState(false);
   const [notes, setNotes] = useState('');
   const [assignedFlight, setAssignedFlight] = useState('');
+  const [dgClass, setDgClass] = useState('');
+  const [dgDesc, setDgDesc] = useState('');
   const router = useRouter();
 
   useEffect(() => {
@@ -24,6 +26,8 @@ export default function CargoDetailPage({ params }: { params: Promise<{ id: stri
       setReq(cargo);
       setNotes(cargo.adminNotes ?? '');
       setAssignedFlight(cargo.assignedFlightId ?? '');
+      setDgClass(cargo.dgClassification ?? '');
+      setDgDesc(cargo.dgDescription ?? '');
       setFlights(Array.isArray(flightData) ? flightData : []);
       setLoading(false);
     });
@@ -36,10 +40,10 @@ export default function CargoDetailPage({ params }: { params: Promise<{ id: stri
     const res = await fetch(`/api/cargo/${id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status, adminNotes: notes, assignedFlightId: assignedFlight }),
+      body: JSON.stringify({ status, adminNotes: notes, assignedFlightId: assignedFlight, dgClassification: dgClass, dgDescription: dgDesc }),
     });
     if (res.ok) {
-      setReq(prev => prev ? { ...prev, status, adminNotes: notes, assignedFlightId: assignedFlight } : prev);
+      setReq(prev => prev ? { ...prev, status, adminNotes: notes, assignedFlightId: assignedFlight, dgClassification: dgClass, dgDescription: dgDesc } : prev);
     }
     setSaving(false);
   }
@@ -49,9 +53,9 @@ export default function CargoDetailPage({ params }: { params: Promise<{ id: stri
     await fetch(`/api/cargo/${id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status: req?.status, adminNotes: notes, assignedFlightId: assignedFlight }),
+      body: JSON.stringify({ status: req?.status, adminNotes: notes, assignedFlightId: assignedFlight, dgClassification: dgClass, dgDescription: dgDesc }),
     });
-    setReq(prev => prev ? { ...prev, adminNotes: notes, assignedFlightId: assignedFlight } : prev);
+    setReq(prev => prev ? { ...prev, adminNotes: notes, assignedFlightId: assignedFlight, dgClassification: dgClass, dgDescription: dgDesc } : prev);
     setSaving(false);
   }
 
@@ -169,6 +173,30 @@ export default function CargoDetailPage({ params }: { params: Promise<{ id: stri
                 ))}
               </select>
             </div>
+
+            {/* DG fields (editable by admin) */}
+            {req.containsDG && (
+              <div className="mb-4 grid sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 mb-1.5">סיווג DG</label>
+                  <input
+                    className="input"
+                    placeholder="לדוג׳ Class 3"
+                    value={dgClass}
+                    onChange={e => setDgClass(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 mb-1.5">תיאור DG</label>
+                  <input
+                    className="input"
+                    placeholder="תיאור החומר המסוכן"
+                    value={dgDesc}
+                    onChange={e => setDgDesc(e.target.value)}
+                  />
+                </div>
+              </div>
+            )}
 
             {/* Notes */}
             <div className="mb-4">
