@@ -49,7 +49,7 @@ export async function getAllCargoRequests(): Promise<CargoRequest[]> {
   const sheets = getSheetsClient();
   const res = await sheets.spreadsheets.values.get({
     spreadsheetId: SPREADSHEET_ID,
-    range: `${SHEET_NAMES.CARGO}!A:AJ`,
+    range: `${SHEET_NAMES.CARGO}!A:AK`,
   });
 
   const rows = res.data.values ?? [];
@@ -67,7 +67,7 @@ export function rowToCargoRequest(row: string[], rowIndex: number): CargoRequest
   const c = CARGO_COLS;
   return {
     rowIndex,
-    requestId: col(row, c.REQUEST_ID) || `REQ-${rowIndex}`,
+    requestId: `REQ-${rowIndex}`,  // Always use row-based ID (no sheet column)
     timestamp: col(row, c.TIMESTAMP),
     fullName: col(row, c.FULL_NAME),
     unit: col(row, c.UNIT),
@@ -88,7 +88,8 @@ export function rowToCargoRequest(row: string[], rowIndex: number): CargoRequest
     totalWeight: Number(col(row, c.TOTAL_WEIGHT)) || 0,
     // New submissions have packaging type at col 26 (AA); old ones at col 18 (S)
     packagingType: col(row, c.PACKAGING_TYPE) || col(row, c.PACKAGING_TYPE_OLD),
-    cargoPhotoUrl: col(row, c.CARGO_PHOTO_URL),
+    // Photo: new submissions use merged DG+photo question (col 22); old submissions used col 28
+    cargoPhotoUrl: col(row, c.CARGO_PHOTO_URL) || col(row, c.DG_DOCUMENTS),
     containsDG: col(row, c.CONTAINS_DG).toLowerCase().includes('כן') || col(row, c.CONTAINS_DG).toLowerCase() === 'yes',
     dgClassification: col(row, c.DG_CLASSIFICATION),
     dgDescription: col(row, c.DG_DESCRIPTION),
@@ -109,7 +110,6 @@ export async function updateCargoRequest(
     status: string;
     adminNotes: string;
     assignedFlightId: string;
-    requestId: string;
     dgClassification: string;
     dgDescription: string;
     conditions: string;
@@ -122,7 +122,6 @@ export async function updateCargoRequest(
 
   const updates: { colIndex: number; value: string }[] = [];
 
-  if (fields.requestId !== undefined)        updates.push({ colIndex: c.REQUEST_ID,        value: fields.requestId });
   if (fields.status !== undefined)            updates.push({ colIndex: c.STATUS,             value: fields.status });
   if (fields.adminNotes !== undefined)        updates.push({ colIndex: c.ADMIN_NOTES,        value: fields.adminNotes });
   if (fields.assignedFlightId !== undefined)  updates.push({ colIndex: c.ASSIGNED_FLIGHT_ID, value: fields.assignedFlightId });

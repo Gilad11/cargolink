@@ -1,12 +1,15 @@
-// Column indices for "Form Responses 1" sheet (Google Form output)
+// Column indices for "תגובות לטופס 1" sheet (Google Form output)
 // Column 0 = A (Timestamp, auto-added by Google Forms)
 //
-// NOTE: After the form was edited, new columns appeared:
-//   Col 25 (Z)  – empty artifact "סוג אריזה" (old question edit residue)
-//   Col 26 (AA) – new "סוג אריזה" packaging type (new submissions)
+// Form columns (0–28, AC):
+//   Col 18 (S)  – "סוג אריזה" old submissions (pre-form-edit)
+//   Col 22 (W)  – "העלאת אישורי DG | תמונת מטען" — merged DG docs + cargo photo upload
+//   Col 25 (Z)  – "סוג אריזה" artifact from form edit (duplicate, skip)
+//   Col 26 (AA) – "סוג אריזה" packaging type (new submissions)
 //   Col 27 (AB) – "כתובת אימייל" auto-collected by Google Forms
-//   Col 28 (AC) – "תמונת מטען" file upload (added manually to form)
-// App-written columns start at col 29 (AD) to avoid conflicts.
+//   Col 28 (AC) – "תמונת מטען" old orphaned column (question deleted from form)
+//   Col 29 (AD) – "עמודה 28" form artifact column (inserted by form, do not use for app writes)
+// App-written columns start at col 31 (AF) — verified from actual sheet data.
 export const CARGO_COLS = {
   TIMESTAMP: 0,
   FULL_NAME: 1,
@@ -30,21 +33,22 @@ export const CARGO_COLS = {
   CONTAINS_DG: 19,
   DG_CLASSIFICATION: 20,
   DG_DESCRIPTION: 21,
-  DG_DOCUMENTS: 22,
+  DG_DOCUMENTS: 22,       // also holds cargo photo for non-DG cargo (merged question)
   MSDS_DOCUMENTS: 23,
-  CONFIRMATION: 24,
-  // Col 25 (Z)  – empty artifact column (skip)
+  // Col 24 (Y)  – "אישור סופי" confirmation (not stored in CargoRequest)
+  // Col 25 (Z)  – "סוג אריזה" artifact duplicate (skip)
   PACKAGING_TYPE: 26,     // new submissions (post-form-edit, col AA)
   EMAIL_AUTO: 27,         // auto-collected by Google Forms (always filled)
-  CARGO_PHOTO_URL: 28,    // #1 photo upload question added to form (col AC)
-  // Written by web app (start at AD=29 to avoid form columns)
-  REQUEST_ID: 29,
-  STATUS: 30,
-  ADMIN_NOTES: 31,
-  ASSIGNED_FLIGHT_ID: 32,
-  CONDITIONS: 33,         // #4 conditional cargo notes
-  ACTUALLY_LOADED: 34,    // #5 did cargo actually board
-  ARCHIVED: 35,           // moved to archive after flight completed
+  CARGO_PHOTO_URL: 28,    // old photo column (orphaned); new photo goes to DG_DOCUMENTS col
+  // Col 29 (AD) – "עמודה 28" form artifact (do not write here)
+  // Col 30 (AE) – reserved / empty
+  // App-written columns (verified positions from sheet data):
+  STATUS: 31,             // (AF) admin sets status
+  ADMIN_NOTES: 32,        // (AG) admin notes
+  ASSIGNED_FLIGHT_ID: 33, // (AH) linked flight
+  CONDITIONS: 34,         // (AI) conditional cargo notes
+  ARCHIVED: 35,           // (AJ) moved to archive after flight completed
+  ACTUALLY_LOADED: 36,    // (AK) did cargo actually board
 } as const;
 
 // Column indices for "Flights" sheet (managed by web app)
