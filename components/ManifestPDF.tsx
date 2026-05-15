@@ -75,7 +75,7 @@ export function ManifestDocument({ data }: { data: ManifestData }) {
         <View style={S.header}>
           <View>
             <Text style={S.logo}>CargoLink</Text>
-            <Text style={S.logoSub}>Israel ↔ UAE Cargo Management System</Text>
+            <Text style={S.logoSub}>Israel -- UAE Cargo Management System</Text>
           </View>
           <View style={{ alignItems: 'flex-end' }}>
             <Text style={S.manifestNum}>MANIFEST NUMBER</Text>
@@ -112,35 +112,33 @@ export function ManifestDocument({ data }: { data: ManifestData }) {
           </View>
         </View>
 
-        {/* Summary + Requirements */}
-        <View style={{ flexDirection: 'row', gap: 12, marginBottom: 14 }}>
-          <View style={S.summaryRow}>
-            <View style={S.summaryBox}>
-              <Text style={S.summaryNum}>{cargo.length}</Text>
-              <Text style={S.summaryLabel}>Total Cargo Items</Text>
-            </View>
-            <View style={S.summaryBox}>
-              <Text style={S.summaryNum}>{totalWeight.toLocaleString()} KG</Text>
-              <Text style={S.summaryLabel}>Total Weight</Text>
-            </View>
-            <View style={S.summaryBox}>
-              <Text style={S.summaryNum}>{totalPackages}</Text>
-              <Text style={S.summaryLabel}>Total Packages</Text>
-            </View>
-            <View style={[S.summaryBox, dgCount > 0 ? { backgroundColor: '#fef2f2', borderColor: '#fecaca' } : {}]}>
-              <Text style={[S.summaryNum, dgCount > 0 ? { color: '#dc2626' } : {}]}>{dgCount}</Text>
-              <Text style={S.summaryLabel}>Dangerous Goods</Text>
-            </View>
+        {/* Summary */}
+        <View style={S.summaryRow}>
+          <View style={S.summaryBox}>
+            <Text style={S.summaryNum}>{cargo.length}</Text>
+            <Text style={S.summaryLabel}>Total Cargo Items</Text>
           </View>
-
-          {/* #3 Requirements box */}
-          {flight.loadingRequirements ? (
-            <View style={[S.reqBox, { flex: 1, minWidth: 160 }]}>
-              <Text style={S.reqTitle}>REQUIREMENTS</Text>
-              <Text style={S.reqText}>{flight.loadingRequirements}</Text>
-            </View>
-          ) : null}
+          <View style={S.summaryBox}>
+            <Text style={S.summaryNum}>{totalWeight.toLocaleString()} KG</Text>
+            <Text style={S.summaryLabel}>Total Weight</Text>
+          </View>
+          <View style={S.summaryBox}>
+            <Text style={S.summaryNum}>{totalPackages}</Text>
+            <Text style={S.summaryLabel}>Total Packages</Text>
+          </View>
+          <View style={[S.summaryBox, dgCount > 0 ? { backgroundColor: '#fef2f2', borderColor: '#fecaca' } : {}]}>
+            <Text style={[S.summaryNum, dgCount > 0 ? { color: '#dc2626' } : {}]}>{dgCount}</Text>
+            <Text style={S.summaryLabel}>Dangerous Goods</Text>
+          </View>
         </View>
+
+        {/* #3 Requirements box — own row */}
+        {flight.loadingRequirements ? (
+          <View style={S.reqBox}>
+            <Text style={S.reqTitle}>REQUIREMENTS</Text>
+            <Text style={S.reqText}>{flight.loadingRequirements}</Text>
+          </View>
+        ) : null}
 
         {/* Cargo Table */}
         <View style={S.table}>
