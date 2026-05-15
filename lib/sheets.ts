@@ -49,7 +49,7 @@ export async function getAllCargoRequests(): Promise<CargoRequest[]> {
   const sheets = getSheetsClient();
   const res = await sheets.spreadsheets.values.get({
     spreadsheetId: SPREADSHEET_ID,
-    range: `${SHEET_NAMES.CARGO}!A:AK`,
+    range: `${SHEET_NAMES.CARGO}!A:Z`,
   });
 
   const rows = res.data.values ?? [];
@@ -77,13 +77,10 @@ export function rowToCargoRequest(row: string[], rowIndex: number): CargoRequest
     fullName: col(row, c.FULL_NAME),
     unit: col(row, c.UNIT),
     phone: col(row, c.PHONE),
-    email: col(row, c.EMAIL) || col(row, c.EMAIL_AUTO),
+    email: col(row, c.EMAIL_AUTO),
     flightDirection: col(row, c.FLIGHT_DIRECTION),
     flightDate: col(row, c.FLIGHT_DATE),
-    departureTime: col(row, c.DEPARTURE_TIME),
     aircraftType: col(row, c.AIRCRAFT_TYPE),
-    departureAirport: col(row, c.DEPARTURE_AIRPORT),
-    destinationAirport: col(row, c.DESTINATION_AIRPORT),
     equipmentCategory: col(row, c.EQUIPMENT_CATEGORY),
     categoryDetails: col(row, c.CATEGORY_DETAILS),
     cargoDescription: col(row, c.CARGO_DESCRIPTION),
@@ -91,15 +88,11 @@ export function rowToCargoRequest(row: string[], rowIndex: number): CargoRequest
     packageDimensions: col(row, c.PACKAGE_DIMENSIONS),
     weightPerPackage: Number(col(row, c.WEIGHT_PER_PACKAGE)) || 0,
     totalWeight: Number(col(row, c.TOTAL_WEIGHT)) || 0,
-    // New submissions have packaging type at col 26 (AA); old ones at col 18 (S)
-    packagingType: col(row, c.PACKAGING_TYPE) || col(row, c.PACKAGING_TYPE_OLD),
-    // Photo: new submissions use merged DG+photo question (col 22); old submissions used col 28
-    cargoPhotoUrl: col(row, c.CARGO_PHOTO_URL) || col(row, c.DG_DOCUMENTS),
+    packagingType: col(row, c.PACKAGING_TYPE),
+    cargoPhotoUrl: col(row, c.DG_DOCUMENTS),
     containsDG: col(row, c.CONTAINS_DG).toLowerCase().includes('כן') || col(row, c.CONTAINS_DG).toLowerCase() === 'yes',
-    dgClassification: col(row, c.DG_CLASSIFICATION),
     dgDescription: col(row, c.DG_DESCRIPTION),
     dgDocumentsUrl: col(row, c.DG_DOCUMENTS),
-    msdsDocumentsUrl: col(row, c.MSDS_DOCUMENTS),
     status: (col(row, c.STATUS) as CargoRequest['status']) || 'pending',
     adminNotes: col(row, c.ADMIN_NOTES),
     assignedFlightId: col(row, c.ASSIGNED_FLIGHT_ID),
@@ -115,7 +108,6 @@ export async function updateCargoRequest(
     status: string;
     adminNotes: string;
     assignedFlightId: string;
-    dgClassification: string;
     dgDescription: string;
     conditions: string;
     actuallyLoaded: boolean;
@@ -130,7 +122,6 @@ export async function updateCargoRequest(
   if (fields.status !== undefined)            updates.push({ colIndex: c.STATUS,             value: fields.status });
   if (fields.adminNotes !== undefined)        updates.push({ colIndex: c.ADMIN_NOTES,        value: fields.adminNotes });
   if (fields.assignedFlightId !== undefined)  updates.push({ colIndex: c.ASSIGNED_FLIGHT_ID, value: fields.assignedFlightId });
-  if (fields.dgClassification !== undefined)  updates.push({ colIndex: c.DG_CLASSIFICATION,  value: fields.dgClassification });
   if (fields.dgDescription !== undefined)     updates.push({ colIndex: c.DG_DESCRIPTION,     value: fields.dgDescription });
   if (fields.conditions !== undefined)        updates.push({ colIndex: c.CONDITIONS,          value: fields.conditions });
   if (fields.actuallyLoaded !== undefined)    updates.push({ colIndex: c.ACTUALLY_LOADED,     value: String(fields.actuallyLoaded) });

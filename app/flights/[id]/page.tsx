@@ -394,13 +394,9 @@ export default function FlightDetailPage({ params }: { params: Promise<{ id: str
                     <div className="text-xs text-slate-400 whitespace-nowrap">{req.fullName} · {req.unit}</div>
                   </div>
                   <div className="text-sm text-slate-500 space-y-0.5">
-                    <div>סיווג: <span className="font-medium text-slate-700">{req.dgClassification || '—'}</span></div>
                     <div>תיאור: <span className="font-medium text-slate-700">{req.dgDescription || '—'}</span></div>
                     {req.dgDocumentsUrl && (
                       <DriveLinks raw={req.dgDocumentsUrl} label="אישורי DG" />
-                    )}
-                    {req.msdsDocumentsUrl && (
-                      <DriveLinks raw={req.msdsDocumentsUrl} label="MSDS" />
                     )}
                   </div>
                 </div>

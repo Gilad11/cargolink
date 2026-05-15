@@ -17,10 +17,7 @@ export interface CargoRequest {
   // Flight (as filled in form)
   flightDirection: string;
   flightDate: string;
-  departureTime: string;
   aircraftType: string;
-  departureAirport: string;
-  destinationAirport: string;
 
   // Cargo
   equipmentCategory: string;
@@ -35,10 +32,8 @@ export interface CargoRequest {
 
   // Dangerous Goods
   containsDG: boolean;
-  dgClassification: string;
   dgDescription: string;
   dgDocumentsUrl: string;
-  msdsDocumentsUrl: string;
 
   // Admin fields (written by web app)
   status: CargoStatus;

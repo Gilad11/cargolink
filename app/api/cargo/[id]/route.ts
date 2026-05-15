@@ -30,7 +30,6 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       status: body.status,
       adminNotes: body.adminNotes,
       assignedFlightId: body.assignedFlightId,
-      dgClassification: body.dgClassification,
       dgDescription: body.dgDescription,
       conditions: body.conditions,
       actuallyLoaded: body.actuallyLoaded,

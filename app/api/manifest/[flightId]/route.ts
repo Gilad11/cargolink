@@ -21,7 +21,6 @@ function dgFileIds(item: CargoRequest): { fileId: string; label: string }[] {
   const results: { fileId: string; label: string }[] = [];
   for (const [raw, label] of [
     [item.dgDocumentsUrl, 'DG Certificate'],
-    [item.msdsDocumentsUrl, 'MSDS'],
   ] as [string, string][]) {
     if (!raw) continue;
     raw.split(',').forEach((url, i, arr) => {
@@ -111,7 +110,7 @@ async function makeSeparatorPage(
     { text: item.unit, size: 11, font: regular },
     { text: '', size: 6, font: regular },
     { text: item.cargoDescription, size: 10, font: regular },
-    { text: `Classification: ${item.dgClassification || '—'}`, size: 10, font: regular },
+    { text: `Classification: —`, size: 10, font: regular },
     { text: `Description: ${item.dgDescription || '—'}`, size: 10, font: regular },
     { text: '', size: 6, font: regular },
     { text: docLabel, size: 11, font, color: rgb(0.86, 0.15, 0.15) },

@@ -197,7 +197,7 @@ export function ManifestDocument({ data }: { data: ManifestData }) {
               <View key={item.requestId} style={S.dgRow}>
                 <Text style={[S.tdBold, { width: '25%' }]}>{item.fullName} · {item.unit}</Text>
                 <Text style={[S.td, { width: '25%' }]}>{item.cargoDescription || item.categoryDetails || '—'}</Text>
-                <Text style={[S.td, { width: '15%' }]}>Class: {item.dgClassification || '—'}</Text>
+                <Text style={[S.td, { width: '15%' }]}>Class: —</Text>
                 <Text style={[S.td, { width: '20%' }]}>{item.dgDescription || '—'}</Text>
                 <Text style={[S.td, { width: '15%', color: item.dgDocumentsUrl ? '#16a34a' : '#dc2626' }]}>
                   Docs: {item.dgDocumentsUrl ? 'Attached' : 'Missing'}

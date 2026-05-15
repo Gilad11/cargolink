@@ -15,7 +15,6 @@ export default function CargoDetailPage({ params }: { params: Promise<{ id: stri
   const [archiving, setArchiving] = useState(false);
   const [notes, setNotes] = useState('');
   const [assignedFlight, setAssignedFlight] = useState('');
-  const [dgClass, setDgClass] = useState('');
   const [dgDesc, setDgDesc] = useState('');
   const [conditions, setConditions] = useState('');
   const router = useRouter();
@@ -28,7 +27,6 @@ export default function CargoDetailPage({ params }: { params: Promise<{ id: stri
       setReq(cargo);
       setNotes(cargo.adminNotes ?? '');
       setAssignedFlight(cargo.assignedFlightId ?? '');
-      setDgClass(cargo.dgClassification ?? '');
       setDgDesc(cargo.dgDescription ?? '');
       setConditions(cargo.conditions ?? '');
       setFlights(Array.isArray(flightData) ? flightData : []);
@@ -43,10 +41,10 @@ export default function CargoDetailPage({ params }: { params: Promise<{ id: stri
     const res = await fetch(`/api/cargo/${id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status, adminNotes: notes, assignedFlightId: assignedFlight, dgClassification: dgClass, dgDescription: dgDesc, conditions }),
+      body: JSON.stringify({ status, adminNotes: notes, assignedFlightId: assignedFlight, dgDescription: dgDesc, conditions }),
     });
     if (res.ok) {
-      setReq(prev => prev ? { ...prev, status, adminNotes: notes, assignedFlightId: assignedFlight, dgClassification: dgClass, dgDescription: dgDesc } : prev);
+      setReq(prev => prev ? { ...prev, status, adminNotes: notes, assignedFlightId: assignedFlight, dgDescription: dgDesc } : prev);
     }
     setSaving(false);
   }
@@ -69,9 +67,9 @@ export default function CargoDetailPage({ params }: { params: Promise<{ id: stri
     await fetch(`/api/cargo/${id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status: req?.status, adminNotes: notes, assignedFlightId: assignedFlight, dgClassification: dgClass, dgDescription: dgDesc, conditions }),
+      body: JSON.stringify({ status: req?.status, adminNotes: notes, assignedFlightId: assignedFlight, dgDescription: dgDesc, conditions }),
     });
-    setReq(prev => prev ? { ...prev, adminNotes: notes, assignedFlightId: assignedFlight, dgClassification: dgClass, dgDescription: dgDesc, conditions } : prev);
+    setReq(prev => prev ? { ...prev, adminNotes: notes, assignedFlightId: assignedFlight, dgDescription: dgDesc, conditions } : prev);
     setSaving(false);
   }
 
@@ -192,18 +190,12 @@ export default function CargoDetailPage({ params }: { params: Promise<{ id: stri
             <div className="card p-5 md:col-span-2 border-red-200 bg-red-50">
               <h3 className="font-bold text-red-700 mb-3 text-sm border-b border-red-200 pb-2">חומרים מסוכנים</h3>
               <div className="grid sm:grid-cols-2 gap-y-2">
-                <InfoRow label="סיווג" value={req.dgClassification || '—'} />
                 <InfoRow label="תיאור" value={req.dgDescription || '—'} />
               </div>
               <div className="flex flex-wrap gap-2 mt-3">
                 {req.dgDocumentsUrl && splitUrls(req.dgDocumentsUrl).map((url, i, arr) => (
                   <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="btn btn-secondary text-xs py-1.5">
                     אישורי DG{arr.length > 1 ? ` (${i + 1})` : ''}
-                  </a>
-                ))}
-                {req.msdsDocumentsUrl && splitUrls(req.msdsDocumentsUrl).map((url, i, arr) => (
-                  <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="btn btn-secondary text-xs py-1.5">
-                    MSDS{arr.length > 1 ? ` (${i + 1})` : ''}
                   </a>
                 ))}
               </div>
@@ -236,15 +228,6 @@ export default function CargoDetailPage({ params }: { params: Promise<{ id: stri
             {/* DG fields (editable by admin) */}
             {req.containsDG && (
               <div className="mb-4 grid sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-1.5">סיווג DG</label>
-                  <input
-                    className="input"
-                    placeholder="לדוג׳ Class 3"
-                    value={dgClass}
-                    onChange={e => setDgClass(e.target.value)}
-                  />
-                </div>
                 <div>
                   <label className="block text-sm font-semibold text-slate-700 mb-1.5">תיאור DG</label>
                   <input
