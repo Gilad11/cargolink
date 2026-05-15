@@ -49,7 +49,7 @@ export async function getAllCargoRequests(): Promise<CargoRequest[]> {
   const sheets = getSheetsClient();
   const res = await sheets.spreadsheets.values.get({
     spreadsheetId: SPREADSHEET_ID,
-    range: `${SHEET_NAMES.CARGO}!A:AG`,
+    range: `${SHEET_NAMES.CARGO}!A:AK`,
   });
 
   const rows = res.data.values ?? [];
@@ -88,8 +88,8 @@ export function rowToCargoRequest(row: string[], rowIndex: number): CargoRequest
     totalWeight: Number(col(row, c.TOTAL_WEIGHT)) || 0,
     // New submissions have packaging type at col 26 (AA); old ones at col 18 (S)
     packagingType: col(row, c.PACKAGING_TYPE) || col(row, c.PACKAGING_TYPE_OLD),
-    // Photo: both DG docs and cargo photo now go to col 22 (merged question)
-    cargoPhotoUrl: col(row, c.DG_DOCUMENTS),
+    // Photo: new submissions use merged DG+photo question (col 22); old submissions used col 28
+    cargoPhotoUrl: col(row, c.CARGO_PHOTO_URL) || col(row, c.DG_DOCUMENTS),
     containsDG: col(row, c.CONTAINS_DG).toLowerCase().includes('כן') || col(row, c.CONTAINS_DG).toLowerCase() === 'yes',
     dgClassification: col(row, c.DG_CLASSIFICATION),
     dgDescription: col(row, c.DG_DESCRIPTION),

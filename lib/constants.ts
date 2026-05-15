@@ -1,14 +1,16 @@
 // Column indices for "תגובות לטופס 1" sheet (Google Form output)
 // Column 0 = A (Timestamp, auto-added by Google Forms)
 //
-// Form columns (0–26, AA):
+// Form columns (0–29):
 //   Col 18 (S)  – "סוג אריזה" old submissions (pre-form-edit)
 //   Col 22 (W)  – "העלאת אישורי DG | תמונת מטען" — merged DG docs + cargo photo upload
-//   Col 24 (Y)  – "אישור סופי" confirmation (form-linked, cannot delete, not stored in CargoRequest)
-//   Col 25 (Z)  – "סוג אריזה" packaging type (new submissions)
-//   Col 26 (AA) – "כתובת אימייל" auto-collected by Google Forms
-// App-written columns start at col 27 (AB).
-// Note: cols 25(Z), 28(AC), 29(AD), 30(AE) were deleted; col 24(Y) is form-linked and kept.
+//   Col 24 (Y)  – "אישור סופי" confirmation (form-linked, not stored in CargoRequest)
+//   Col 25 (Z)  – "סוג אריזה" artifact duplicate (skip)
+//   Col 26 (AA) – "סוג אריזה" packaging type (new submissions)
+//   Col 27 (AB) – "כתובת אימייל" auto-collected by Google Forms
+//   Col 28 (AC) – "תמונת מטען" old orphaned column
+//   Col 29 (AD) – "עמודה 28" form artifact (do not write here)
+// App-written columns start at col 31 (AF).
 export const CARGO_COLS = {
   TIMESTAMP: 0,
   FULL_NAME: 1,
@@ -35,15 +37,18 @@ export const CARGO_COLS = {
   DG_DOCUMENTS: 22,       // also holds cargo photo for non-DG cargo (merged question)
   MSDS_DOCUMENTS: 23,
   // Col 24 (Y)  – "אישור סופי" confirmation (form-linked, not stored in CargoRequest)
-  PACKAGING_TYPE: 25,     // new submissions (post-form-edit, col Z)
-  EMAIL_AUTO: 26,         // auto-collected by Google Forms (col AA, always filled)
+  // Col 25 (Z)  – "סוג אריזה" artifact duplicate (skip)
+  PACKAGING_TYPE: 26,     // new submissions (post-form-edit, col AA)
+  EMAIL_AUTO: 27,         // auto-collected by Google Forms (col AB, always filled)
+  CARGO_PHOTO_URL: 28,    // old photo column (AC); new photos go to DG_DOCUMENTS (col 22)
+  // Col 29 (AD) – "עמודה 28" form artifact (do not write here)
   // App-written columns:
-  STATUS: 27,             // (AB) admin sets status
-  ADMIN_NOTES: 28,        // (AC) admin notes
-  ASSIGNED_FLIGHT_ID: 29, // (AD) linked flight
-  CONDITIONS: 30,         // (AE) conditional cargo notes
-  ARCHIVED: 31,           // (AF) moved to archive after flight completed
-  ACTUALLY_LOADED: 32,    // (AG) did cargo actually board
+  STATUS: 31,             // (AF) admin sets status
+  ADMIN_NOTES: 32,        // (AG) admin notes
+  ASSIGNED_FLIGHT_ID: 33, // (AH) linked flight
+  CONDITIONS: 34,         // (AI) conditional cargo notes
+  ARCHIVED: 35,           // (AJ) moved to archive after flight completed
+  ACTUALLY_LOADED: 36,    // (AK) did cargo actually board
 } as const;
 
 // Column indices for "Flights" sheet (managed by web app)
