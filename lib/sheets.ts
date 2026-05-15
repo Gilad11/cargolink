@@ -55,7 +55,12 @@ export async function getAllCargoRequests(): Promise<CargoRequest[]> {
   const rows = res.data.values ?? [];
   if (rows.length <= 1) return [];
 
-  return rows.slice(1).map((row, i) => rowToCargoRequest(row, i + 2));
+  // Filter out empty rows (no timestamp in col 0) — these arise when a stray
+  // value exists far down the sheet, causing the API to return blank rows.
+  return rows.slice(1)
+    .map((row, i) => ({ row, rowIndex: i + 2 }))
+    .filter(({ row }) => (row[0] ?? '').trim() !== '')
+    .map(({ row, rowIndex }) => rowToCargoRequest(row, rowIndex));
 }
 
 export async function getCargoRequestsByFlight(flightId: string): Promise<CargoRequest[]> {
