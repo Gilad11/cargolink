@@ -208,7 +208,6 @@ export function rowToFlight(row: string[]): Flight | null {
     status: (col(row, c.STATUS) as Flight['status']) || 'planned',
     coordinatorName: col(row, c.COORDINATOR_NAME),
     coordinatorPhone: col(row, c.COORDINATOR_PHONE),
-    coordinatorEmail: col(row, c.COORDINATOR_EMAIL),
     loadingRequirements: col(row, c.LOADING_REQUIREMENTS),
     notes: col(row, c.NOTES),
     createdAt: col(row, c.CREATED_AT),
@@ -233,7 +232,6 @@ export async function createFlight(flight: Omit<Flight, 'createdAt'>): Promise<F
   row[c.STATUS]               = flight.status;
   row[c.COORDINATOR_NAME]     = flight.coordinatorName;
   row[c.COORDINATOR_PHONE]    = flight.coordinatorPhone ?? '';
-  row[c.COORDINATOR_EMAIL]    = flight.coordinatorEmail ?? '';
   row[c.LOADING_REQUIREMENTS] = flight.loadingRequirements ?? '';
   row[c.NOTES]                = flight.notes;
   row[c.CREATED_AT]           = now;
@@ -267,7 +265,6 @@ export async function updateFlight(id: string, fields: Partial<Flight>) {
   if (fields.arrivalTime !== undefined)          updates.push({ col: c.ARRIVAL_TIME,          value: fields.arrivalTime });
   if (fields.coordinatorName !== undefined)      updates.push({ col: c.COORDINATOR_NAME,      value: fields.coordinatorName });
   if (fields.coordinatorPhone !== undefined)     updates.push({ col: c.COORDINATOR_PHONE,     value: fields.coordinatorPhone });
-  if (fields.coordinatorEmail !== undefined)     updates.push({ col: c.COORDINATOR_EMAIL,     value: fields.coordinatorEmail });
   if (fields.loadingRequirements !== undefined)  updates.push({ col: c.LOADING_REQUIREMENTS,  value: fields.loadingRequirements });
 
   for (const u of updates) {

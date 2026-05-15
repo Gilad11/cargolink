@@ -235,13 +235,12 @@ export default function FlightDetailPage({ params }: { params: Promise<{ id: str
                 <InfoRow label="נתיב" value={`${flight.departureAirport} → ${flight.destinationAirport}`} />
               </dl>
             </div>
-            {(flight.coordinatorName || flight.coordinatorPhone || flight.coordinatorEmail) && (
+            {(flight.coordinatorName || flight.coordinatorPhone) && (
               <div className="border-t border-slate-100 pt-3">
                 <h4 className="text-xs font-semibold text-slate-500 mb-2">איש קשר לטיסה</h4>
                 <dl className="space-y-1.5">
                   {flight.coordinatorName  && <InfoRow label="שם"    value={flight.coordinatorName} />}
                   {flight.coordinatorPhone && <InfoRow label="טלפון" value={flight.coordinatorPhone} />}
-                  {flight.coordinatorEmail && <InfoRow label="מייל"  value={flight.coordinatorEmail} />}
                 </dl>
               </div>
             )}

@@ -61,7 +61,6 @@ export interface Flight {
   status: FlightStatus;
   coordinatorName: string;
   coordinatorPhone: string;    // #2 — contact person phone
-  coordinatorEmail: string;    // #2 — contact person email
   loadingRequirements: string; // #3 — equipment needed at airports
   notes: string;
   createdAt: string;

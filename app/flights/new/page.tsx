@@ -19,7 +19,6 @@ export default function NewFlightPage() {
     destinationAirport: '',
     coordinatorName: '',
     coordinatorPhone: '',
-    coordinatorEmail: '',
     loadingRequirements: '',
     notes: '',
   });
@@ -191,26 +190,14 @@ export default function NewFlightPage() {
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-1.5">טלפון איש קשר</label>
-                <input
-                  className="input"
-                  placeholder="05X-XXXXXXX"
-                  value={form.coordinatorPhone}
-                  onChange={e => set('coordinatorPhone', e.target.value)}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-1.5">מייל איש קשר</label>
-                <input
-                  type="email"
-                  className="input"
-                  placeholder="name@example.com"
-                  value={form.coordinatorEmail}
-                  onChange={e => set('coordinatorEmail', e.target.value)}
-                />
-              </div>
+            <div>
+              <label className="block text-sm font-semibold text-slate-700 mb-1.5">טלפון איש קשר</label>
+              <input
+                className="input"
+                placeholder="05X-XXXXXXX"
+                value={form.coordinatorPhone}
+                onChange={e => set('coordinatorPhone', e.target.value)}
+              />
             </div>
 
             {/* Loading Requirements */}

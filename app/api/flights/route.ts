@@ -33,7 +33,6 @@ export async function POST(req: NextRequest) {
       status: 'planned',
       coordinatorName: body.coordinatorName ?? '',
       coordinatorPhone: body.coordinatorPhone ?? '',
-      coordinatorEmail: body.coordinatorEmail ?? '',
       loadingRequirements: body.loadingRequirements ?? '',
       notes: body.notes ?? '',
     };

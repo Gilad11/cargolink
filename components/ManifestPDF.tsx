@@ -101,12 +101,11 @@ export function ManifestDocument({ data }: { data: ManifestData }) {
               {flight.arrivalTime ? <View style={S.row}><Text style={S.label}>Arrival Time:</Text><Text style={S.value}>{flight.arrivalTime} (UAE)</Text></View> : null}
             </View>
             {/* #2 Contact person */}
-            {(flight.coordinatorName || flight.coordinatorPhone || flight.coordinatorEmail) && (
+            {(flight.coordinatorName || flight.coordinatorPhone) && (
               <View style={{ flex: 1, borderLeft: '1px solid #e2e8f0', paddingLeft: 16 }}>
                 <Text style={[S.label, { fontFamily: 'Helvetica-Bold', color: '#1e293b', marginBottom: 4 }]}>POINT OF CONTACT</Text>
                 {flight.coordinatorName  && <View style={S.row}><Text style={S.label}>Name:</Text><Text style={S.value}>{flight.coordinatorName}</Text></View>}
                 {flight.coordinatorPhone && <View style={S.row}><Text style={S.label}>Phone:</Text><Text style={S.value}>{flight.coordinatorPhone}</Text></View>}
-                {flight.coordinatorEmail && <View style={S.row}><Text style={S.label}>Email:</Text><Text style={S.value}>{flight.coordinatorEmail}</Text></View>}
               </View>
             )}
           </View>
