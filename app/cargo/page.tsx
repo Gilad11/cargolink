@@ -5,18 +5,19 @@ import Navbar from '@/components/Navbar';
 import { CargoStatusBadge } from '@/components/StatusBadge';
 import { CargoRequest, CargoStatus } from '@/lib/types';
 
-const TABS: { key: CargoStatus | 'all'; label: string }[] = [
-  { key: 'all',         label: 'הכל' },
-  { key: 'pending',     label: 'ממתין' },
-  { key: 'missing_info',label: 'מידע חסר' },
-  { key: 'approved',    label: 'מאושר' },
-  { key: 'rejected',    label: 'נדחה' },
+const TABS: { key: CargoStatus | 'all' | 'archived'; label: string }[] = [
+  { key: 'all',          label: 'הכל' },
+  { key: 'pending',      label: 'ממתין' },
+  { key: 'missing_info', label: 'מידע חסר' },
+  { key: 'approved',     label: 'מאושר' },
+  { key: 'rejected',     label: 'נדחה' },
+  { key: 'archived',     label: 'ארכיון' },
 ];
 
 export default function CargoPage() {
   const [cargo, setCargo] = useState<CargoRequest[]>([]);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState<CargoStatus | 'all'>('all');
+  const [tab, setTab] = useState<CargoStatus | 'all' | 'archived'>('all');
   const [search, setSearch] = useState('');
   const [role, setRole] = useState<'viewer' | 'admin'>('viewer');
   const router = useRouter();
@@ -30,16 +31,31 @@ export default function CargoPage() {
     if (role === 'admin') setRole('admin');
   }, []);
 
+  // Active cargo = not archived; archive tab shows only archived
+  const active  = cargo.filter(c => !c.archived);
+  const archived = cargo.filter(c => c.archived);
+
   const filtered = cargo.filter(req => {
-    const matchTab = tab === 'all' || req.status === tab;
+    const isArchived = req.archived;
+    if (tab === 'archived') {
+      if (!isArchived) return false;
+    } else {
+      if (isArchived) return false;
+      if (tab !== 'all' && req.status !== tab) return false;
+    }
     const q = search.toLowerCase();
-    const matchSearch = !q || [req.fullName, req.unit, req.cargoDescription, req.categoryDetails, req.equipmentCategory, req.requestId]
+    return !q || [req.fullName, req.unit, req.cargoDescription, req.categoryDetails, req.equipmentCategory, req.requestId]
       .some(f => f?.toLowerCase().includes(q));
-    return matchTab && matchSearch;
   });
 
-  const counts: Record<string, number> = { all: cargo.length };
-  TABS.slice(1).forEach(t => { counts[t.key] = cargo.filter(c => c.status === t.key).length; });
+  const counts: Record<string, number> = {
+    all:          active.length,
+    pending:      active.filter(c => c.status === 'pending').length,
+    missing_info: active.filter(c => c.status === 'missing_info').length,
+    approved:     active.filter(c => c.status === 'approved').length,
+    rejected:     active.filter(c => c.status === 'rejected').length,
+    archived:     archived.length,
+  };
 
   return (
     <div className="min-h-screen">
@@ -63,7 +79,11 @@ export default function CargoPage() {
             <button
               key={t.key}
               onClick={() => setTab(t.key)}
-              className={`btn text-sm py-1.5 px-3 ${tab === t.key ? 'btn-primary' : 'btn-secondary'}`}
+              className={`btn text-sm py-1.5 px-3 ${
+                tab === t.key
+                  ? t.key === 'archived' ? 'btn-secondary !bg-slate-600 !text-white !border-slate-600' : 'btn-primary'
+                  : 'btn-secondary'
+              }`}
             >
               {t.label}
               <span className={`mr-1 text-xs rounded-full px-1.5 py-0.5 ${
@@ -75,11 +95,20 @@ export default function CargoPage() {
           ))}
         </div>
 
+        {/* Archive notice */}
+        {tab === 'archived' && (
+          <div className="alert alert-info text-sm">
+            בקשות בארכיון הן בקשות שמטענן אושר, עלה בפועל על הטיסה, והטיסה הושלמה. ניתן לשחזר אותן במקרה הצורך מדף פרטי הבקשה.
+          </div>
+        )}
+
         <div className="card">
           {loading ? (
             <div className="p-8 text-center text-slate-400 text-sm">טוען...</div>
           ) : filtered.length === 0 ? (
-            <div className="p-8 text-center text-slate-400 text-sm">אין בקשות להצגה</div>
+            <div className="p-8 text-center text-slate-400 text-sm">
+              {tab === 'archived' ? 'אין בקשות בארכיון' : 'אין בקשות להצגה'}
+            </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="data-table">
@@ -96,7 +125,11 @@ export default function CargoPage() {
                 </thead>
                 <tbody>
                   {filtered.map(req => (
-                    <tr key={req.requestId} onClick={() => router.push(`/cargo/${req.requestId}`)}>
+                    <tr
+                      key={req.requestId}
+                      onClick={() => router.push(`/cargo/${req.requestId}`)}
+                      className={req.archived ? 'opacity-60' : ''}
+                    >
                       <td>
                         <div className="font-medium text-slate-800">{req.fullName}</div>
                         <div className="text-xs text-slate-400">{req.phone}</div>
@@ -109,7 +142,12 @@ export default function CargoPage() {
                       <td className="whitespace-nowrap text-slate-600 text-sm">{req.flightDate}</td>
                       <td className="whitespace-nowrap font-medium">{req.totalWeight} ק"ג</td>
                       <td>{req.containsDG ? <span className="dg-badge">DG</span> : '—'}</td>
-                      <td><CargoStatusBadge status={req.status} /></td>
+                      <td>
+                        {req.archived
+                          ? <span className="inline-block bg-slate-200 text-slate-600 text-xs px-2 py-0.5 rounded-full">ארכיון</span>
+                          : <CargoStatusBadge status={req.status} />
+                        }
+                      </td>
                     </tr>
                   ))}
                 </tbody>

@@ -20,6 +20,7 @@ export default function FlightDetailPage({ params }: { params: Promise<{ id: str
   const [editArr, setEditArr] = useState('');
   const [savingTimes, setSavingTimes] = useState(false);
   const [togglingLoaded, setTogglingLoaded] = useState<string | null>(null);
+  const [archivingAll, setArchivingAll] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -52,6 +53,25 @@ export default function FlightDetailPage({ params }: { params: Promise<{ id: str
     } : prev);
     setSavingTimes(false);
     setEditingTimes(false);
+  }
+
+  async function archiveLoadedCargo() {
+    if (!data) return;
+    const toArchive = data.cargo.filter(c => c.actuallyLoaded && !c.archived);
+    if (toArchive.length === 0) return;
+    setArchivingAll(true);
+    await Promise.all(toArchive.map(c =>
+      fetch(`/api/cargo/${c.requestId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ archived: true }),
+      })
+    ));
+    setData(prev => prev ? {
+      ...prev,
+      cargo: prev.cargo.map(c => toArchive.some(a => a.requestId === c.requestId) ? { ...c, archived: true } : c),
+    } : prev);
+    setArchivingAll(false);
   }
 
   async function toggleActuallyLoaded(req: CargoRequest) {
@@ -191,6 +211,16 @@ export default function FlightDetailPage({ params }: { params: Promise<{ id: str
             <button className="btn btn-whatsapp" onClick={handleShareWhatsApp} disabled={sharing}>
               {sharing ? 'שולח...' : 'שתף בווטסאפ'}
             </button>
+            {role === 'admin' && flight.status === 'completed' && cargo.some(c => c.actuallyLoaded && !c.archived) && (
+              <button
+                className="btn btn-secondary !border-slate-400 !text-slate-600 hover:!bg-slate-100"
+                onClick={archiveLoadedCargo}
+                disabled={archivingAll}
+                title="העבר לארכיון את כל המטענים שעלו בפועל"
+              >
+                {archivingAll ? 'מעביר...' : '🗄 ארכב מטענים שנטענו'}
+              </button>
+            )}
           </div>
         </div>
 
@@ -294,7 +324,10 @@ export default function FlightDetailPage({ params }: { params: Promise<{ id: str
                   {cargo.map((req, i) => (
                     <tr key={req.requestId}
                       onClick={() => router.push(`/cargo/${req.requestId}`)}
-                      className={req.actuallyLoaded === false && (flight.status === 'active' || flight.status === 'completed') ? 'opacity-50' : ''}
+                      className={
+                        req.archived ? 'opacity-40 bg-slate-50' :
+                        req.actuallyLoaded === false && (flight.status === 'active' || flight.status === 'completed') ? 'opacity-50' : ''
+                      }
                     >
                       <td className="text-slate-400 text-xs">{i + 1}</td>
                       <td className="font-medium max-w-48">
@@ -311,17 +344,21 @@ export default function FlightDetailPage({ params }: { params: Promise<{ id: str
                         ) : '—'}
                       </td>
                       {role === 'admin' && (
-                        <td onClick={e => { e.stopPropagation(); toggleActuallyLoaded(req); }}>
-                          <button
-                            disabled={togglingLoaded === req.requestId}
-                            className={`w-8 h-8 rounded-full border-2 flex items-center justify-center text-sm font-bold transition-colors ${
-                              req.actuallyLoaded
-                                ? 'bg-green-500 border-green-500 text-white'
-                                : 'border-slate-300 text-slate-300 hover:border-green-400'
-                            }`}
-                          >
-                            {req.actuallyLoaded ? '✓' : ''}
-                          </button>
+                        <td onClick={e => { e.stopPropagation(); if (!req.archived) toggleActuallyLoaded(req); }}>
+                          {req.archived ? (
+                            <span className="text-xs text-slate-400 px-1">🗄</span>
+                          ) : (
+                            <button
+                              disabled={togglingLoaded === req.requestId}
+                              className={`w-8 h-8 rounded-full border-2 flex items-center justify-center text-sm font-bold transition-colors ${
+                                req.actuallyLoaded
+                                  ? 'bg-green-500 border-green-500 text-white'
+                                  : 'border-slate-300 text-slate-300 hover:border-green-400'
+                              }`}
+                            >
+                              {req.actuallyLoaded ? '✓' : ''}
+                            </button>
+                          )}
                         </td>
                       )}
                     </tr>

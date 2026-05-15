@@ -44,6 +44,7 @@ export const CARGO_COLS = {
   ASSIGNED_FLIGHT_ID: 32,
   CONDITIONS: 33,         // #4 conditional cargo notes
   ACTUALLY_LOADED: 34,    // #5 did cargo actually board
+  ARCHIVED: 35,           // moved to archive after flight completed
 } as const;
 
 // Column indices for "Flights" sheet (managed by web app)

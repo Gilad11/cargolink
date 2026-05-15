@@ -12,6 +12,7 @@ export default function CargoDetailPage({ params }: { params: Promise<{ id: stri
   const [role, setRole] = useState<'viewer' | 'admin'>('viewer');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [archiving, setArchiving] = useState(false);
   const [notes, setNotes] = useState('');
   const [assignedFlight, setAssignedFlight] = useState('');
   const [dgClass, setDgClass] = useState('');
@@ -50,6 +51,19 @@ export default function CargoDetailPage({ params }: { params: Promise<{ id: stri
     setSaving(false);
   }
 
+  async function toggleArchived() {
+    if (!req) return;
+    setArchiving(true);
+    const next = !req.archived;
+    await fetch(`/api/cargo/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ archived: next }),
+    });
+    setReq(prev => prev ? { ...prev, archived: next } : prev);
+    setArchiving(false);
+  }
+
   async function saveNotes() {
     setSaving(true);
     await fetch(`/api/cargo/${id}`, {
@@ -69,6 +83,23 @@ export default function CargoDetailPage({ params }: { params: Promise<{ id: stri
       <Navbar role={role} />
       <main className="max-w-4xl mx-auto px-4 py-6 space-y-6">
 
+        {/* Archived banner */}
+        {req.archived && (
+          <div className="flex items-center gap-3 p-3 bg-slate-100 border border-slate-300 rounded-lg text-sm text-slate-600">
+            <span className="text-lg">🗄</span>
+            <span className="flex-1">בקשה זו נמצאת בארכיון — הטיסה הושלמה והמטען נמסר.</span>
+            {role === 'admin' && (
+              <button
+                onClick={toggleArchived}
+                disabled={archiving}
+                className="btn btn-secondary text-xs py-1 px-3"
+              >
+                {archiving ? 'מחזיר...' : 'שחזר מארכיון'}
+              </button>
+            )}
+          </div>
+        )}
+
         {/* Header */}
         <div className="flex items-start justify-between gap-4 flex-wrap">
           <div className="flex items-center gap-3">
@@ -76,7 +107,10 @@ export default function CargoDetailPage({ params }: { params: Promise<{ id: stri
             <div>
               <div className="flex items-center gap-2">
                 <h1 className="text-xl font-bold text-slate-800">בקשת מטען</h1>
-                <CargoStatusBadge status={req.status} />
+                {req.archived
+                  ? <span className="inline-block bg-slate-200 text-slate-600 text-xs px-2 py-0.5 rounded-full font-medium">ארכיון</span>
+                  : <CargoStatusBadge status={req.status} />
+                }
                 {req.containsDG && <span className="dg-badge">DG</span>}
               </div>
               <div className="text-xs text-slate-400 mt-0.5">#{req.requestId}</div>
@@ -248,34 +282,58 @@ export default function CargoDetailPage({ params }: { params: Promise<{ id: stri
 
             {/* Action buttons */}
             <div className="flex gap-2 flex-wrap">
-              <button
-                className="btn btn-success"
-                disabled={saving || req.status === 'approved'}
-                onClick={() => updateStatus('approved')}
-              >
-                אשר בקשה
-              </button>
-              <button
-                className="btn btn-warning"
-                disabled={saving || req.status === 'missing_info'}
-                onClick={() => updateStatus('missing_info')}
-              >
-                מידע חסר
-              </button>
-              <button
-                className="btn btn-danger"
-                disabled={saving || req.status === 'rejected'}
-                onClick={() => updateStatus('rejected')}
-              >
-                דחה בקשה
-              </button>
-              <button
-                className="btn btn-secondary"
-                disabled={saving}
-                onClick={saveNotes}
-              >
-                {saving ? 'שומר...' : 'שמור הערות'}
-              </button>
+              {!req.archived && (
+                <>
+                  <button
+                    className="btn btn-success"
+                    disabled={saving || req.status === 'approved'}
+                    onClick={() => updateStatus('approved')}
+                  >
+                    אשר בקשה
+                  </button>
+                  <button
+                    className="btn btn-warning"
+                    disabled={saving || req.status === 'missing_info'}
+                    onClick={() => updateStatus('missing_info')}
+                  >
+                    מידע חסר
+                  </button>
+                  <button
+                    className="btn btn-danger"
+                    disabled={saving || req.status === 'rejected'}
+                    onClick={() => updateStatus('rejected')}
+                  >
+                    דחה בקשה
+                  </button>
+                  <button
+                    className="btn btn-secondary"
+                    disabled={saving}
+                    onClick={saveNotes}
+                  >
+                    {saving ? 'שומר...' : 'שמור הערות'}
+                  </button>
+                </>
+              )}
+              {/* Archive / restore */}
+              {req.actuallyLoaded && !req.archived && (
+                <button
+                  className="btn btn-secondary !border-slate-400 !text-slate-600 hover:!bg-slate-100"
+                  disabled={archiving}
+                  onClick={toggleArchived}
+                  title="העבר לארכיון — הטיסה הושלמה והמטען נמסר"
+                >
+                  {archiving ? 'מעביר...' : '🗄 העבר לארכיון'}
+                </button>
+              )}
+              {req.archived && (
+                <button
+                  className="btn btn-secondary"
+                  disabled={archiving}
+                  onClick={toggleArchived}
+                >
+                  {archiving ? 'מחזיר...' : 'שחזר מארכיון'}
+                </button>
+              )}
             </div>
           </div>
         )}

@@ -99,6 +99,7 @@ export function rowToCargoRequest(row: string[], rowIndex: number): CargoRequest
     assignedFlightId: col(row, c.ASSIGNED_FLIGHT_ID),
     conditions: col(row, c.CONDITIONS),
     actuallyLoaded: col(row, c.ACTUALLY_LOADED) === 'true',
+    archived: col(row, c.ARCHIVED) === 'true',
   };
 }
 
@@ -113,6 +114,7 @@ export async function updateCargoRequest(
     dgDescription: string;
     conditions: string;
     actuallyLoaded: boolean;
+    archived: boolean;
   }>
 ) {
   const sheets = getSheetsClient();
@@ -128,6 +130,7 @@ export async function updateCargoRequest(
   if (fields.dgDescription !== undefined)     updates.push({ colIndex: c.DG_DESCRIPTION,     value: fields.dgDescription });
   if (fields.conditions !== undefined)        updates.push({ colIndex: c.CONDITIONS,          value: fields.conditions });
   if (fields.actuallyLoaded !== undefined)    updates.push({ colIndex: c.ACTUALLY_LOADED,     value: String(fields.actuallyLoaded) });
+  if (fields.archived !== undefined)          updates.push({ colIndex: c.ARCHIVED,            value: String(fields.archived) });
 
   for (const u of updates) {
     await sheets.spreadsheets.values.update({

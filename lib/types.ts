@@ -46,6 +46,7 @@ export interface CargoRequest {
   assignedFlightId: string;
   conditions: string;          // #4 — conditional notes (e.g. "דורש הפחתת נוסעים")
   actuallyLoaded: boolean;     // #5 — did this cargo actually board the aircraft
+  archived: boolean;           // moved to archive after flight completed
 }
 
 export interface Flight {
