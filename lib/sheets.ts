@@ -49,7 +49,7 @@ export async function getAllCargoRequests(): Promise<CargoRequest[]> {
   const sheets = getSheetsClient();
   const res = await sheets.spreadsheets.values.get({
     spreadsheetId: SPREADSHEET_ID,
-    range: `${SHEET_NAMES.CARGO}!A:AK`,
+    range: `${SHEET_NAMES.CARGO}!A:AG`,
   });
 
   const rows = res.data.values ?? [];
@@ -88,8 +88,8 @@ export function rowToCargoRequest(row: string[], rowIndex: number): CargoRequest
     totalWeight: Number(col(row, c.TOTAL_WEIGHT)) || 0,
     // New submissions have packaging type at col 26 (AA); old ones at col 18 (S)
     packagingType: col(row, c.PACKAGING_TYPE) || col(row, c.PACKAGING_TYPE_OLD),
-    // Photo: new submissions use merged DG+photo question (col 22); old submissions used col 28
-    cargoPhotoUrl: col(row, c.CARGO_PHOTO_URL) || col(row, c.DG_DOCUMENTS),
+    // Photo: both DG docs and cargo photo now go to col 22 (merged question)
+    cargoPhotoUrl: col(row, c.DG_DOCUMENTS),
     containsDG: col(row, c.CONTAINS_DG).toLowerCase().includes('כן') || col(row, c.CONTAINS_DG).toLowerCase() === 'yes',
     dgClassification: col(row, c.DG_CLASSIFICATION),
     dgDescription: col(row, c.DG_DESCRIPTION),
@@ -167,7 +167,7 @@ export async function ensureFlightsSheet() {
         'Flight ID', 'Flight Number', 'Aircraft Type', 'Direction',
         'Departure Date', 'Departure Time', 'Arrival Time',
         'Departure Airport', 'Destination Airport',
-        'Status', 'Coordinator Name', 'Coordinator Phone', 'Coordinator Email',
+        'Status', 'Coordinator Name', 'Coordinator Phone',
         'Loading Requirements', 'Notes', 'Created At',
       ]],
     },
@@ -180,7 +180,7 @@ export async function getAllFlights(): Promise<Flight[]> {
   const sheets = getSheetsClient();
   const res = await sheets.spreadsheets.values.get({
     spreadsheetId: SPREADSHEET_ID,
-    range: `${SHEET_NAMES.FLIGHTS}!A:P`,
+    range: `${SHEET_NAMES.FLIGHTS}!A:O`,
   });
 
   const rows = res.data.values ?? [];
@@ -240,7 +240,7 @@ export async function createFlight(flight: Omit<Flight, 'createdAt'>): Promise<F
 
   await sheets.spreadsheets.values.append({
     spreadsheetId: SPREADSHEET_ID,
-    range: `${SHEET_NAMES.FLIGHTS}!A:P`,
+    range: `${SHEET_NAMES.FLIGHTS}!A:O`,
     valueInputOption: 'RAW',
     requestBody: { values: [row] },
   });
