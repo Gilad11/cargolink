@@ -31,6 +31,7 @@ export interface CargoRequest {
   weightPerPackage: number;
   totalWeight: number;
   packagingType: string;
+  cargoPhotoUrl: string;       // #1 — photo uploaded via Google Form
 
   // Dangerous Goods
   containsDG: boolean;
@@ -43,6 +44,8 @@ export interface CargoRequest {
   status: CargoStatus;
   adminNotes: string;
   assignedFlightId: string;
+  conditions: string;          // #4 — conditional notes (e.g. "דורש הפחתת נוסעים")
+  actuallyLoaded: boolean;     // #5 — did this cargo actually board the aircraft
 }
 
 export interface Flight {
@@ -57,6 +60,9 @@ export interface Flight {
   destinationAirport: string;
   status: FlightStatus;
   coordinatorName: string;
+  coordinatorPhone: string;    // #2 — contact person phone
+  coordinatorEmail: string;    // #2 — contact person email
+  loadingRequirements: string; // #3 — equipment needed at airports
   notes: string;
   createdAt: string;
 }
@@ -69,4 +75,5 @@ export interface ManifestData {
   dgCount: number;
   generatedAt: string;
   manifestNumber: string;
+  finalManifest?: boolean;     // #5 — true = only actually-loaded items
 }

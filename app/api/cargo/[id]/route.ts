@@ -32,6 +32,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       assignedFlightId: body.assignedFlightId,
       dgClassification: body.dgClassification,
       dgDescription: body.dgDescription,
+      conditions: body.conditions,
+      actuallyLoaded: body.actuallyLoaded,
     });
     return NextResponse.json({ ok: true });
   } catch (e) {

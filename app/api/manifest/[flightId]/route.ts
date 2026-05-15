@@ -137,11 +137,12 @@ async function makeSeparatorPage(
     { x: 32, y: 24, size: 8, font: regular, color: rgb(0.58, 0.64, 0.72) });
 }
 
-export async function GET(_: NextRequest, { params }: { params: Promise<{ flightId: string }> }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ flightId: string }> }) {
   const { flightId } = await params;
+  const finalOnly = req.nextUrl.searchParams.get('final') === 'true';
 
   try {
-    const [flight, cargo] = await Promise.all([
+    const [flight, allCargo] = await Promise.all([
       getFlightById(flightId),
       getCargoRequestsByFlight(flightId),
     ]);
@@ -149,6 +150,9 @@ export async function GET(_: NextRequest, { params }: { params: Promise<{ flight
     if (!flight) {
       return NextResponse.json({ error: 'Flight not found' }, { status: 404 });
     }
+
+    // #5 — Final manifest: only cargo that actually boarded
+    const cargo = finalOnly ? allCargo.filter(c => c.actuallyLoaded) : allCargo;
 
     const totalWeight   = cargo.reduce((s, c) => s + c.totalWeight, 0);
     const totalPackages = cargo.reduce((s, c) => s + c.packageCount, 0);
@@ -165,6 +169,7 @@ export async function GET(_: NextRequest, { params }: { params: Promise<{ flight
       dgCount,
       generatedAt,
       manifestNumber: generateManifestNumber(flight.flightNumber, flight.departureDate),
+      finalManifest: finalOnly,
     };
 
     // 1. Render the main manifest PDF
@@ -234,7 +239,7 @@ export async function GET(_: NextRequest, { params }: { params: Promise<{ flight
     return new Response(Buffer.from(finalBytes), {
       headers: {
         'Content-Type': 'application/pdf',
-        'Content-Disposition': `attachment; filename="manifest-${flight.flightNumber}.pdf"`,
+        'Content-Disposition': `attachment; filename="manifest-${flight.flightNumber}${finalOnly ? '-final' : ''}.pdf"`,
       },
     });
   } catch (e) {

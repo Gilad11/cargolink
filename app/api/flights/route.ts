@@ -32,6 +32,9 @@ export async function POST(req: NextRequest) {
       destinationAirport: body.destinationAirport,
       status: 'planned',
       coordinatorName: body.coordinatorName ?? '',
+      coordinatorPhone: body.coordinatorPhone ?? '',
+      coordinatorEmail: body.coordinatorEmail ?? '',
+      loadingRequirements: body.loadingRequirements ?? '',
       notes: body.notes ?? '',
     };
     const created = await createFlight(flight);

@@ -18,6 +18,9 @@ export default function NewFlightPage() {
     departureAirport: '',
     destinationAirport: '',
     coordinatorName: '',
+    coordinatorPhone: '',
+    coordinatorEmail: '',
+    loadingRequirements: '',
     notes: '',
   });
 
@@ -179,12 +182,46 @@ export default function NewFlightPage() {
 
             {/* Coordinator */}
             <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-1.5">שם רכז המטען</label>
+              <label className="block text-sm font-semibold text-slate-700 mb-1.5">שם איש קשר / רכז</label>
               <input
                 className="input"
-                placeholder="שם רכז"
+                placeholder="שם מלא"
                 value={form.coordinatorName}
                 onChange={e => set('coordinatorName', e.target.value)}
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-1.5">טלפון איש קשר</label>
+                <input
+                  className="input"
+                  placeholder="05X-XXXXXXX"
+                  value={form.coordinatorPhone}
+                  onChange={e => set('coordinatorPhone', e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-1.5">מייל איש קשר</label>
+                <input
+                  type="email"
+                  className="input"
+                  placeholder="name@example.com"
+                  value={form.coordinatorEmail}
+                  onChange={e => set('coordinatorEmail', e.target.value)}
+                />
+              </div>
+            </div>
+
+            {/* Loading Requirements */}
+            <div>
+              <label className="block text-sm font-semibold text-slate-700 mb-1.5">דרישות העמסה / פריקה</label>
+              <textarea
+                className="input resize-none"
+                rows={2}
+                placeholder="לדוג׳: מלגזה 3 טון בLLBG, קרן 10 טון בOMAL"
+                value={form.loadingRequirements}
+                onChange={e => set('loadingRequirements', e.target.value)}
               />
             </div>
 
@@ -193,7 +230,7 @@ export default function NewFlightPage() {
               <label className="block text-sm font-semibold text-slate-700 mb-1.5">הערות</label>
               <textarea
                 className="input resize-none"
-                rows={3}
+                rows={2}
                 placeholder="הערות נוספות..."
                 value={form.notes}
                 onChange={e => set('notes', e.target.value)}

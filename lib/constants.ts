@@ -5,6 +5,7 @@
 //   Col 25 (Z)  – empty artifact "סוג אריזה" (old question edit residue)
 //   Col 26 (AA) – new "סוג אריזה" packaging type (new submissions)
 //   Col 27 (AB) – "כתובת אימייל" auto-collected by Google Forms
+//   Col 28 (AC) – "תמונת מטען" file upload (added manually to form)
 // App-written columns start at col 29 (AD) to avoid conflicts.
 export const CARGO_COLS = {
   TIMESTAMP: 0,
@@ -35,12 +36,14 @@ export const CARGO_COLS = {
   // Col 25 (Z)  – empty artifact column (skip)
   PACKAGING_TYPE: 26,     // new submissions (post-form-edit, col AA)
   EMAIL_AUTO: 27,         // auto-collected by Google Forms (always filled)
-  // Col 28 (AC) – spare
+  CARGO_PHOTO_URL: 28,    // #1 photo upload question added to form (col AC)
   // Written by web app (start at AD=29 to avoid form columns)
   REQUEST_ID: 29,
   STATUS: 30,
   ADMIN_NOTES: 31,
   ASSIGNED_FLIGHT_ID: 32,
+  CONDITIONS: 33,         // #4 conditional cargo notes
+  ACTUALLY_LOADED: 34,    // #5 did cargo actually board
 } as const;
 
 // Column indices for "Flights" sheet (managed by web app)
@@ -56,8 +59,11 @@ export const FLIGHT_COLS = {
   DESTINATION_AIRPORT: 8,
   STATUS: 9,
   COORDINATOR_NAME: 10,
-  NOTES: 11,
-  CREATED_AT: 12,
+  COORDINATOR_PHONE: 11,   // #2 contact phone
+  COORDINATOR_EMAIL: 12,   // #2 contact email
+  LOADING_REQUIREMENTS: 13, // #3 equipment needed at airports
+  NOTES: 14,
+  CREATED_AT: 15,
 } as const;
 
 export const SHEET_NAMES = {

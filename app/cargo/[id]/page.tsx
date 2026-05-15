@@ -16,6 +16,7 @@ export default function CargoDetailPage({ params }: { params: Promise<{ id: stri
   const [assignedFlight, setAssignedFlight] = useState('');
   const [dgClass, setDgClass] = useState('');
   const [dgDesc, setDgDesc] = useState('');
+  const [conditions, setConditions] = useState('');
   const router = useRouter();
 
   useEffect(() => {
@@ -28,6 +29,7 @@ export default function CargoDetailPage({ params }: { params: Promise<{ id: stri
       setAssignedFlight(cargo.assignedFlightId ?? '');
       setDgClass(cargo.dgClassification ?? '');
       setDgDesc(cargo.dgDescription ?? '');
+      setConditions(cargo.conditions ?? '');
       setFlights(Array.isArray(flightData) ? flightData : []);
       setLoading(false);
     });
@@ -40,7 +42,7 @@ export default function CargoDetailPage({ params }: { params: Promise<{ id: stri
     const res = await fetch(`/api/cargo/${id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status, adminNotes: notes, assignedFlightId: assignedFlight, dgClassification: dgClass, dgDescription: dgDesc }),
+      body: JSON.stringify({ status, adminNotes: notes, assignedFlightId: assignedFlight, dgClassification: dgClass, dgDescription: dgDesc, conditions }),
     });
     if (res.ok) {
       setReq(prev => prev ? { ...prev, status, adminNotes: notes, assignedFlightId: assignedFlight, dgClassification: dgClass, dgDescription: dgDesc } : prev);
@@ -53,9 +55,9 @@ export default function CargoDetailPage({ params }: { params: Promise<{ id: stri
     await fetch(`/api/cargo/${id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status: req?.status, adminNotes: notes, assignedFlightId: assignedFlight, dgClassification: dgClass, dgDescription: dgDesc }),
+      body: JSON.stringify({ status: req?.status, adminNotes: notes, assignedFlightId: assignedFlight, dgClassification: dgClass, dgDescription: dgDesc, conditions }),
     });
-    setReq(prev => prev ? { ...prev, adminNotes: notes, assignedFlightId: assignedFlight, dgClassification: dgClass, dgDescription: dgDesc } : prev);
+    setReq(prev => prev ? { ...prev, adminNotes: notes, assignedFlightId: assignedFlight, dgClassification: dgClass, dgDescription: dgDesc, conditions } : prev);
     setSaving(false);
   }
 
@@ -131,10 +133,24 @@ export default function CargoDetailPage({ params }: { params: Promise<{ id: stri
               <InfoRow label="משקל לאריזה" value={`${req.weightPerPackage} ק"ג`} />
               <InfoRow label='משקל כולל' value={`${req.totalWeight} ק"ג`} />
               <InfoRow label="סוג אריזה" value={req.packagingType} />
-              {(req.cargoDescription) && (
+              {req.cargoDescription && (
                 <InfoRow label="תיאור מטען" value={req.cargoDescription} />
               )}
+              {req.conditions && (
+                <div className="sm:col-span-2 mt-1 p-2 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-800">
+                  ⚠ <span className="font-semibold">ציוד על תנאי:</span> {req.conditions}
+                </div>
+              )}
             </div>
+            {req.cargoPhotoUrl && (
+              <div className="mt-4 pt-3 border-t border-slate-100">
+                <div className="text-xs text-slate-500 mb-2">תמונת מטען</div>
+                <a href={normalizeDriveUrl(req.cargoPhotoUrl)} target="_blank" rel="noopener noreferrer"
+                   className="btn btn-secondary text-xs py-1.5">
+                  צפה בתמונה ↗
+                </a>
+              </div>
+            )}
           </div>
 
           {/* DG Info */}
@@ -206,6 +222,17 @@ export default function CargoDetailPage({ params }: { params: Promise<{ id: stri
                 </div>
               </div>
             )}
+
+            {/* Conditions */}
+            <div className="mb-4">
+              <label className="block text-sm font-semibold text-slate-700 mb-1.5">ציוד על תנאי</label>
+              <input
+                className="input"
+                placeholder="לדוג׳: דורש הפחתת 5 נוסעים / לא ניתן לטוס עם ציוד X"
+                value={conditions}
+                onChange={e => setConditions(e.target.value)}
+              />
+            </div>
 
             {/* Notes */}
             <div className="mb-4">

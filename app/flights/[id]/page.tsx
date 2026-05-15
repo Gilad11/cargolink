@@ -19,6 +19,7 @@ export default function FlightDetailPage({ params }: { params: Promise<{ id: str
   const [editDep, setEditDep] = useState('');
   const [editArr, setEditArr] = useState('');
   const [savingTimes, setSavingTimes] = useState(false);
+  const [togglingLoaded, setTogglingLoaded] = useState<string | null>(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -51,6 +52,21 @@ export default function FlightDetailPage({ params }: { params: Promise<{ id: str
     } : prev);
     setSavingTimes(false);
     setEditingTimes(false);
+  }
+
+  async function toggleActuallyLoaded(req: CargoRequest) {
+    setTogglingLoaded(req.requestId);
+    const next = !req.actuallyLoaded;
+    await fetch(`/api/cargo/${req.requestId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ actuallyLoaded: next }),
+    });
+    setData(prev => prev ? {
+      ...prev,
+      cargo: prev.cargo.map(c => c.requestId === req.requestId ? { ...c, actuallyLoaded: next } : c),
+    } : prev);
+    setTogglingLoaded(null);
   }
 
   async function updateFlightStatus(status: Flight['status']) {
@@ -98,16 +114,17 @@ export default function FlightDetailPage({ params }: { params: Promise<{ id: str
     setSharing(false);
   }
 
-  async function handleDownloadPDF() {
+  async function handleDownloadPDF(finalOnly = false) {
     if (!data) return;
-    const res = await fetch(`/api/manifest/${id}`);
+    const url = `/api/manifest/${id}${finalOnly ? '?final=true' : ''}`;
+    const res = await fetch(url);
     const blob = await res.blob();
-    const url = URL.createObjectURL(blob);
+    const objUrl = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.href = url;
-    a.download = `manifest-${data.flight.flightNumber}.pdf`;
+    a.href = objUrl;
+    a.download = `manifest-${data.flight.flightNumber}${finalOnly ? '-final' : ''}.pdf`;
     a.click();
-    URL.revokeObjectURL(url);
+    URL.revokeObjectURL(objUrl);
   }
 
   if (loading) return <div className="min-h-screen flex items-center justify-center text-slate-400">טוען...</div>;
@@ -163,9 +180,14 @@ export default function FlightDetailPage({ params }: { params: Promise<{ id: str
                 </button>
               </>
             )}
-            <button className="btn btn-secondary" onClick={handleDownloadPDF}>
-              הורד PDF
+            <button className="btn btn-secondary" onClick={() => handleDownloadPDF()}>
+              הורד מניפסט
             </button>
+            {(flight.status === 'active' || flight.status === 'completed') && (
+              <button className="btn btn-primary" onClick={() => { handleDownloadPDF(true); }}>
+                מניפסט סופי ✓
+              </button>
+            )}
             <button className="btn btn-whatsapp" onClick={handleShareWhatsApp} disabled={sharing}>
               {sharing ? 'שולח...' : 'שתף בווטסאפ'}
             </button>
@@ -201,17 +223,34 @@ export default function FlightDetailPage({ params }: { params: Promise<{ id: str
 
         {/* Flight Info + Summary */}
         <div className="grid md:grid-cols-2 gap-4">
-          <div className="card p-5">
-            <h3 className="font-bold text-slate-700 mb-3 text-sm">פרטי טיסה</h3>
-            <dl className="space-y-2">
-              <InfoRow label="מספר טיסה" value={flight.flightNumber} />
-              <InfoRow label="סוג מטוס" value={flight.aircraftType} />
-              <InfoRow label="תאריך" value={flight.departureDate} />
-              <InfoRow label="שעת המראה" value={flight.departureTime} />
-              {flight.arrivalTime && <InfoRow label="שעת נחיתה ביעד" value={flight.arrivalTime} />}
-              <InfoRow label="נתיב" value={`${flight.departureAirport} → ${flight.destinationAirport}`} />
-              {flight.coordinatorName && <InfoRow label="רכז" value={flight.coordinatorName} />}
-            </dl>
+          <div className="card p-5 space-y-4">
+            <div>
+              <h3 className="font-bold text-slate-700 mb-3 text-sm">פרטי טיסה</h3>
+              <dl className="space-y-2">
+                <InfoRow label="מספר טיסה" value={flight.flightNumber} />
+                <InfoRow label="סוג מטוס" value={flight.aircraftType} />
+                <InfoRow label="תאריך" value={flight.departureDate} />
+                <InfoRow label="שעת המראה" value={flight.departureTime} />
+                {flight.arrivalTime && <InfoRow label="שעת נחיתה ביעד" value={flight.arrivalTime} />}
+                <InfoRow label="נתיב" value={`${flight.departureAirport} → ${flight.destinationAirport}`} />
+              </dl>
+            </div>
+            {(flight.coordinatorName || flight.coordinatorPhone || flight.coordinatorEmail) && (
+              <div className="border-t border-slate-100 pt-3">
+                <h4 className="text-xs font-semibold text-slate-500 mb-2">איש קשר לטיסה</h4>
+                <dl className="space-y-1.5">
+                  {flight.coordinatorName  && <InfoRow label="שם"    value={flight.coordinatorName} />}
+                  {flight.coordinatorPhone && <InfoRow label="טלפון" value={flight.coordinatorPhone} />}
+                  {flight.coordinatorEmail && <InfoRow label="מייל"  value={flight.coordinatorEmail} />}
+                </dl>
+              </div>
+            )}
+            {flight.loadingRequirements && (
+              <div className="border-t border-amber-100 pt-3 bg-amber-50 -mx-5 px-5 pb-1 rounded-b-xl">
+                <h4 className="text-xs font-semibold text-amber-700 mb-1">⚙ דרישות העמסה / פריקה</h4>
+                <p className="text-sm text-amber-900">{flight.loadingRequirements}</p>
+              </div>
+            )}
           </div>
 
           <div className="grid grid-cols-2 gap-3">
@@ -245,28 +284,47 @@ export default function FlightDetailPage({ params }: { params: Promise<{ id: str
                     <th>#</th>
                     <th>תיאור / קטגוריה</th>
                     <th>יחידה</th>
-                    <th>קטגוריה</th>
                     <th>כמות</th>
-                    <th>מידות</th>
                     <th>משקל</th>
                     <th>DG</th>
-                    <th>סטטוס</th>
+                    <th>תנאים</th>
+                    {role === 'admin' && <th>עלה בפועל</th>}
                   </tr>
                 </thead>
                 <tbody>
                   {cargo.map((req, i) => (
-                    <tr key={req.requestId} onClick={() => router.push(`/cargo/${req.requestId}`)}>
+                    <tr key={req.requestId}
+                      onClick={() => router.push(`/cargo/${req.requestId}`)}
+                      className={req.actuallyLoaded === false && (flight.status === 'active' || flight.status === 'completed') ? 'opacity-50' : ''}
+                    >
                       <td className="text-slate-400 text-xs">{i + 1}</td>
                       <td className="font-medium max-w-48">
                         <div className="truncate">{req.cargoDescription || req.categoryDetails || req.equipmentCategory}</div>
+                        <div className="text-xs text-slate-400">{req.unit}</div>
                       </td>
-                      <td className="text-slate-500 text-xs">{req.unit}</td>
-                      <td className="text-xs text-slate-600">{req.equipmentCategory}</td>
+                      <td className="text-slate-500 text-xs">{req.equipmentCategory}</td>
                       <td className="text-center">{req.packageCount}</td>
-                      <td className="text-xs text-slate-500 whitespace-nowrap">{req.packageDimensions}</td>
                       <td className="font-medium whitespace-nowrap">{req.totalWeight} ק"ג</td>
                       <td>{req.containsDG ? <span className="dg-badge">DG</span> : '—'}</td>
-                      <td><CargoStatusBadge status={req.status} /></td>
+                      <td>
+                        {req.conditions ? (
+                          <span className="inline-block bg-amber-100 text-amber-800 text-xs px-2 py-0.5 rounded-full" title={req.conditions}>⚠ על תנאי</span>
+                        ) : '—'}
+                      </td>
+                      {role === 'admin' && (
+                        <td onClick={e => { e.stopPropagation(); toggleActuallyLoaded(req); }}>
+                          <button
+                            disabled={togglingLoaded === req.requestId}
+                            className={`w-8 h-8 rounded-full border-2 flex items-center justify-center text-sm font-bold transition-colors ${
+                              req.actuallyLoaded
+                                ? 'bg-green-500 border-green-500 text-white'
+                                : 'border-slate-300 text-slate-300 hover:border-green-400'
+                            }`}
+                          >
+                            {req.actuallyLoaded ? '✓' : ''}
+                          </button>
+                        </td>
+                      )}
                     </tr>
                   ))}
                 </tbody>

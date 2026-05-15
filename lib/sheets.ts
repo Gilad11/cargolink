@@ -49,7 +49,7 @@ export async function getAllCargoRequests(): Promise<CargoRequest[]> {
   const sheets = getSheetsClient();
   const res = await sheets.spreadsheets.values.get({
     spreadsheetId: SPREADSHEET_ID,
-    range: `${SHEET_NAMES.CARGO}!A:AH`,
+    range: `${SHEET_NAMES.CARGO}!A:AJ`,
   });
 
   const rows = res.data.values ?? [];
@@ -88,6 +88,7 @@ export function rowToCargoRequest(row: string[], rowIndex: number): CargoRequest
     totalWeight: Number(col(row, c.TOTAL_WEIGHT)) || 0,
     // New submissions have packaging type at col 26 (AA); old ones at col 18 (S)
     packagingType: col(row, c.PACKAGING_TYPE) || col(row, c.PACKAGING_TYPE_OLD),
+    cargoPhotoUrl: col(row, c.CARGO_PHOTO_URL),
     containsDG: col(row, c.CONTAINS_DG).toLowerCase().includes('כן') || col(row, c.CONTAINS_DG).toLowerCase() === 'yes',
     dgClassification: col(row, c.DG_CLASSIFICATION),
     dgDescription: col(row, c.DG_DESCRIPTION),
@@ -96,12 +97,23 @@ export function rowToCargoRequest(row: string[], rowIndex: number): CargoRequest
     status: (col(row, c.STATUS) as CargoRequest['status']) || 'pending',
     adminNotes: col(row, c.ADMIN_NOTES),
     assignedFlightId: col(row, c.ASSIGNED_FLIGHT_ID),
+    conditions: col(row, c.CONDITIONS),
+    actuallyLoaded: col(row, c.ACTUALLY_LOADED) === 'true',
   };
 }
 
 export async function updateCargoRequest(
   rowIndex: number,
-  fields: Partial<{ status: string; adminNotes: string; assignedFlightId: string; requestId: string; dgClassification: string; dgDescription: string }>
+  fields: Partial<{
+    status: string;
+    adminNotes: string;
+    assignedFlightId: string;
+    requestId: string;
+    dgClassification: string;
+    dgDescription: string;
+    conditions: string;
+    actuallyLoaded: boolean;
+  }>
 ) {
   const sheets = getSheetsClient();
   const c = CARGO_COLS;
@@ -114,6 +126,8 @@ export async function updateCargoRequest(
   if (fields.assignedFlightId !== undefined)  updates.push({ colIndex: c.ASSIGNED_FLIGHT_ID, value: fields.assignedFlightId });
   if (fields.dgClassification !== undefined)  updates.push({ colIndex: c.DG_CLASSIFICATION,  value: fields.dgClassification });
   if (fields.dgDescription !== undefined)     updates.push({ colIndex: c.DG_DESCRIPTION,     value: fields.dgDescription });
+  if (fields.conditions !== undefined)        updates.push({ colIndex: c.CONDITIONS,          value: fields.conditions });
+  if (fields.actuallyLoaded !== undefined)    updates.push({ colIndex: c.ACTUALLY_LOADED,     value: String(fields.actuallyLoaded) });
 
   for (const u of updates) {
     await sheets.spreadsheets.values.update({
@@ -140,21 +154,22 @@ export async function ensureFlightsSheet() {
         requests: [{ addSheet: { properties: { title: SHEET_NAMES.FLIGHTS } } }],
       },
     });
-    // Add header row
-    await sheets.spreadsheets.values.update({
-      spreadsheetId: SPREADSHEET_ID,
-      range: `${SHEET_NAMES.FLIGHTS}!A1`,
-      valueInputOption: 'RAW',
-      requestBody: {
-        values: [[
-          'Flight ID', 'Flight Number', 'Aircraft Type', 'Direction',
-          'Departure Date', 'Departure Time', 'Arrival Time',
-          'Departure Airport', 'Destination Airport',
-          'Status', 'Coordinator Name', 'Notes', 'Created At',
-        ]],
-      },
-    });
   }
+  // Always ensure header row is up to date
+  await sheets.spreadsheets.values.update({
+    spreadsheetId: SPREADSHEET_ID,
+    range: `${SHEET_NAMES.FLIGHTS}!A1`,
+    valueInputOption: 'RAW',
+    requestBody: {
+      values: [[
+        'Flight ID', 'Flight Number', 'Aircraft Type', 'Direction',
+        'Departure Date', 'Departure Time', 'Arrival Time',
+        'Departure Airport', 'Destination Airport',
+        'Status', 'Coordinator Name', 'Coordinator Phone', 'Coordinator Email',
+        'Loading Requirements', 'Notes', 'Created At',
+      ]],
+    },
+  });
 }
 
 export async function getAllFlights(): Promise<Flight[]> {
@@ -163,7 +178,7 @@ export async function getAllFlights(): Promise<Flight[]> {
   const sheets = getSheetsClient();
   const res = await sheets.spreadsheets.values.get({
     spreadsheetId: SPREADSHEET_ID,
-    range: `${SHEET_NAMES.FLIGHTS}!A:M`,
+    range: `${SHEET_NAMES.FLIGHTS}!A:P`,
   });
 
   const rows = res.data.values ?? [];
@@ -192,6 +207,9 @@ export function rowToFlight(row: string[]): Flight | null {
     destinationAirport: col(row, c.DESTINATION_AIRPORT),
     status: (col(row, c.STATUS) as Flight['status']) || 'planned',
     coordinatorName: col(row, c.COORDINATOR_NAME),
+    coordinatorPhone: col(row, c.COORDINATOR_PHONE),
+    coordinatorEmail: col(row, c.COORDINATOR_EMAIL),
+    loadingRequirements: col(row, c.LOADING_REQUIREMENTS),
     notes: col(row, c.NOTES),
     createdAt: col(row, c.CREATED_AT),
   };
@@ -201,16 +219,28 @@ export async function createFlight(flight: Omit<Flight, 'createdAt'>): Promise<F
   await ensureFlightsSheet();
   const sheets = getSheetsClient();
   const now = new Date().toISOString();
-  const row = [
-    flight.id, flight.flightNumber, flight.aircraftType, flight.direction,
-    flight.departureDate, flight.departureTime, flight.arrivalTime ?? '',
-    flight.departureAirport, flight.destinationAirport,
-    flight.status, flight.coordinatorName, flight.notes, now,
-  ];
+  const c = FLIGHT_COLS;
+  const row = new Array(c.CREATED_AT + 1).fill('');
+  row[c.FLIGHT_ID]            = flight.id;
+  row[c.FLIGHT_NUMBER]        = flight.flightNumber;
+  row[c.AIRCRAFT_TYPE]        = flight.aircraftType;
+  row[c.DIRECTION]            = flight.direction;
+  row[c.DEPARTURE_DATE]       = flight.departureDate;
+  row[c.DEPARTURE_TIME]       = flight.departureTime;
+  row[c.ARRIVAL_TIME]         = flight.arrivalTime ?? '';
+  row[c.DEPARTURE_AIRPORT]    = flight.departureAirport;
+  row[c.DESTINATION_AIRPORT]  = flight.destinationAirport;
+  row[c.STATUS]               = flight.status;
+  row[c.COORDINATOR_NAME]     = flight.coordinatorName;
+  row[c.COORDINATOR_PHONE]    = flight.coordinatorPhone ?? '';
+  row[c.COORDINATOR_EMAIL]    = flight.coordinatorEmail ?? '';
+  row[c.LOADING_REQUIREMENTS] = flight.loadingRequirements ?? '';
+  row[c.NOTES]                = flight.notes;
+  row[c.CREATED_AT]           = now;
 
   await sheets.spreadsheets.values.append({
     spreadsheetId: SPREADSHEET_ID,
-    range: `${SHEET_NAMES.FLIGHTS}!A:M`,
+    range: `${SHEET_NAMES.FLIGHTS}!A:P`,
     valueInputOption: 'RAW',
     requestBody: { values: [row] },
   });
@@ -230,17 +260,20 @@ export async function updateFlight(id: string, fields: Partial<Flight>) {
 
   const c = FLIGHT_COLS;
   const updates: { col: number; value: string }[] = [];
-  if (fields.status !== undefined)        updates.push({ col: c.STATUS,         value: fields.status });
-  if (fields.notes !== undefined)         updates.push({ col: c.NOTES,          value: fields.notes });
-  if (fields.departureDate !== undefined) updates.push({ col: c.DEPARTURE_DATE, value: fields.departureDate });
-  if (fields.departureTime !== undefined) updates.push({ col: c.DEPARTURE_TIME, value: fields.departureTime });
-  if (fields.arrivalTime !== undefined)   updates.push({ col: c.ARRIVAL_TIME,   value: fields.arrivalTime });
+  if (fields.status !== undefined)               updates.push({ col: c.STATUS,                value: fields.status });
+  if (fields.notes !== undefined)                updates.push({ col: c.NOTES,                 value: fields.notes });
+  if (fields.departureDate !== undefined)        updates.push({ col: c.DEPARTURE_DATE,        value: fields.departureDate });
+  if (fields.departureTime !== undefined)        updates.push({ col: c.DEPARTURE_TIME,        value: fields.departureTime });
+  if (fields.arrivalTime !== undefined)          updates.push({ col: c.ARRIVAL_TIME,          value: fields.arrivalTime });
+  if (fields.coordinatorName !== undefined)      updates.push({ col: c.COORDINATOR_NAME,      value: fields.coordinatorName });
+  if (fields.coordinatorPhone !== undefined)     updates.push({ col: c.COORDINATOR_PHONE,     value: fields.coordinatorPhone });
+  if (fields.coordinatorEmail !== undefined)     updates.push({ col: c.COORDINATOR_EMAIL,     value: fields.coordinatorEmail });
+  if (fields.loadingRequirements !== undefined)  updates.push({ col: c.LOADING_REQUIREMENTS,  value: fields.loadingRequirements });
 
   for (const u of updates) {
-    const colLetter = String.fromCharCode(65 + u.col);
     await sheets.spreadsheets.values.update({
       spreadsheetId: SPREADSHEET_ID,
-      range: `${SHEET_NAMES.FLIGHTS}!${colLetter}${rowIndex}`,
+      range: `${SHEET_NAMES.FLIGHTS}!${colLetter(u.col)}${rowIndex}`,
       valueInputOption: 'RAW',
       requestBody: { values: [[u.value]] },
     });
