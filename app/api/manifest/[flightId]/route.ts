@@ -47,7 +47,7 @@ let _sealBytes: Uint8Array | null = null;
 function getSealBytes(): Uint8Array {
   if (!_sealBytes) {
     _sealBytes = new Uint8Array(
-      readFileSync(join(process.cwd(), 'public', 'images', 'seal.jpg'))
+      readFileSync(join(process.cwd(), 'public', 'images', 'seal.png'))
     );
   }
   return _sealBytes;
@@ -60,7 +60,7 @@ async function stampSeal(pdfDoc: PDFDocument) {
   const page = pages[0];
   const { width, height } = page.getSize();
 
-  const sealImage = await pdfDoc.embedJpg(getSealBytes());
+  const sealImage = await pdfDoc.embedPng(getSealBytes());
   const sealSize = 130; // points (~46mm) — prominent but not overpowering
   const scaled = sealImage.scaleToFit(sealSize, sealSize);
 
@@ -136,6 +136,11 @@ async function makeSeparatorPage(
     { x: 32, y: 24, size: 8, font: regular, color: rgb(0.58, 0.64, 0.72) });
 }
 
+/** Detect file format from magic bytes — more reliable than mimeType from Drive. */
+function isPdf(b: Uint8Array)  { return b[0] === 0x25 && b[1] === 0x50 && b[2] === 0x44 && b[3] === 0x46; } // %PDF
+function isPng(b: Uint8Array)  { return b[0] === 0x89 && b[1] === 0x50 && b[2] === 0x4E && b[3] === 0x47; } // ‰PNG
+function isJpeg(b: Uint8Array) { return b[0] === 0xFF && b[1] === 0xD8 && b[2] === 0xFF; }                   // ÿØÿ
+
 export async function GET(req: NextRequest, { params }: { params: Promise<{ flightId: string }> }) {
   const { flightId } = await params;
   const finalOnly = req.nextUrl.searchParams.get('final') === 'true';
@@ -200,11 +205,16 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ flig
           // Separator page (added only after successful fetch)
           await makeSeparatorPage(merged, item, label);
 
-          if (mimeType.includes('pdf')) {
-            const certDoc = await PDFDocument.load(bytes);
-            const certPages = await merged.copyPages(certDoc, certDoc.getPageIndices());
-            certPages.forEach(p => merged.addPage(p));
-          } else if (mimeType.includes('png')) {
+          if (isPdf(bytes)) {
+            try {
+              const certDoc = await PDFDocument.load(bytes, { ignoreEncryption: true });
+              const certPages = await merged.copyPages(certDoc, certDoc.getPageIndices());
+              certPages.forEach(p => merged.addPage(p));
+            } catch {
+              // Encrypted or corrupted PDF — embed as image fallback not possible, skip silently
+              console.warn(`Skipping unreadable PDF for ${item.fullName}`);
+            }
+          } else if (isPng(bytes)) {
             const img = await merged.embedPng(bytes);
             const page = merged.addPage([841.89, 595.28]);
             const scaled = img.scaleToFit(page.getWidth() - 40, page.getHeight() - 40);
@@ -214,8 +224,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ flig
               width: scaled.width,
               height: scaled.height,
             });
-          } else {
-            // JPEG / other images
+          } else if (isJpeg(bytes)) {
             const img = await merged.embedJpg(bytes);
             const page = merged.addPage([841.89, 595.28]);
             const scaled = img.scaleToFit(page.getWidth() - 40, page.getHeight() - 40);
@@ -225,6 +234,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ flig
               width: scaled.width,
               height: scaled.height,
             });
+          } else {
+            // Unknown format (HEIC, WebP, TIFF, etc.) — log and skip
+            console.warn(`Unsupported file format (${mimeType}) for ${item.fullName}, skipping`);
           }
         } catch (err) {
           // File unavailable — log and skip entirely (no orphaned separator page)
