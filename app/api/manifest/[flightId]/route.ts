@@ -202,19 +202,17 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ flig
           // Fetch first — only add pages if this succeeds
           const { bytes, mimeType } = await fetchDriveFile(fileId);
 
-          // Separator page (added only after successful fetch)
-          await makeSeparatorPage(merged, item, label);
-
           if (isPdf(bytes)) {
+            await makeSeparatorPage(merged, item, label);
             try {
               const certDoc = await PDFDocument.load(bytes, { ignoreEncryption: true });
               const certPages = await merged.copyPages(certDoc, certDoc.getPageIndices());
               certPages.forEach(p => merged.addPage(p));
             } catch {
-              // Encrypted or corrupted PDF — embed as image fallback not possible, skip silently
               console.warn(`Skipping unreadable PDF for ${item.fullName}`);
             }
           } else if (isPng(bytes)) {
+            await makeSeparatorPage(merged, item, label);
             const img = await merged.embedPng(bytes);
             const page = merged.addPage([841.89, 595.28]);
             const scaled = img.scaleToFit(page.getWidth() - 40, page.getHeight() - 40);
@@ -225,6 +223,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ flig
               height: scaled.height,
             });
           } else if (isJpeg(bytes)) {
+            await makeSeparatorPage(merged, item, label);
             const img = await merged.embedJpg(bytes);
             const page = merged.addPage([841.89, 595.28]);
             const scaled = img.scaleToFit(page.getWidth() - 40, page.getHeight() - 40);
@@ -235,7 +234,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ flig
               height: scaled.height,
             });
           } else {
-            // Unknown format (HEIC, WebP, TIFF, etc.) — log and skip
+            // Unknown format (HEIC, WebP, TIFF, etc.) — skip without adding orphaned separator
             console.warn(`Unsupported file format (${mimeType}) for ${item.fullName}, skipping`);
           }
         } catch (err) {
