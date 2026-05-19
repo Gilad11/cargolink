@@ -127,14 +127,19 @@ export async function updateCargoRequest(
   if (fields.actuallyLoaded !== undefined)    updates.push({ colIndex: c.ACTUALLY_LOADED,     value: String(fields.actuallyLoaded) });
   if (fields.archived !== undefined)          updates.push({ colIndex: c.ARCHIVED,            value: String(fields.archived) });
 
-  for (const u of updates) {
-    await sheets.spreadsheets.values.update({
-      spreadsheetId: SPREADSHEET_ID,
-      range: `${SHEET_NAMES.CARGO}!${colLetter(u.colIndex)}${rowIndex}`,
+  if (updates.length === 0) return;
+
+  // Send all updates in a single batchUpdate call instead of one per field
+  await sheets.spreadsheets.values.batchUpdate({
+    spreadsheetId: SPREADSHEET_ID,
+    requestBody: {
       valueInputOption: 'RAW',
-      requestBody: { values: [[u.value]] },
-    });
-  }
+      data: updates.map(u => ({
+        range: `${SHEET_NAMES.CARGO}!${colLetter(u.colIndex)}${rowIndex}`,
+        values: [[u.value]],
+      })),
+    },
+  });
 }
 
 // ─── Flights ─────────────────────────────────────────────────────────────────
@@ -172,7 +177,6 @@ export async function ensureFlightsSheet() {
 
 export async function getAllFlights(): Promise<Flight[]> {
   if (!isConfigured()) return [];
-  await ensureFlightsSheet();
   const sheets = getSheetsClient();
   const res = await sheets.spreadsheets.values.get({
     spreadsheetId: SPREADSHEET_ID,

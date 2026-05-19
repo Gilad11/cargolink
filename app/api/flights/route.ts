@@ -4,6 +4,8 @@ import { getRole } from '@/lib/auth';
 import { Flight } from '@/lib/types';
 import { randomUUID } from 'crypto';
 
+export const revalidate = 60; // cache for 60 seconds
+
 export async function GET() {
   try {
     const flights = await getAllFlights();
