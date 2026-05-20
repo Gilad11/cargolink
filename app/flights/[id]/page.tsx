@@ -116,14 +116,14 @@ export default function FlightDetailPage({ params }: { params: Promise<{ id: str
       const msgLines = [
         `*CARGO MANIFEST — ${flight.flightNumber}*`,
         `--------------------------------`,
-        `מסלול:    ${flight.departureAirport} → ${flight.destinationAirport}`,
-        `תאריך:    ${flight.departureDate}  ${flight.departureTime} (UAE)`,
+        `Route:    ${flight.departureAirport} → ${flight.destinationAirport}`,
+        `Date:     ${flight.departureDate}  ${flight.departureTime} (UAE)`,
         ``,
-        `פריטי מטען:   *${cargo.length}*`,
-        `משקל כולל:    *${totalWeight.toLocaleString()} ק״ג*`,
-        ...(dgCount > 0 ? [`חומרים מסוכנים: *${dgCount}*`] : []),
+        `Cargo Items:    *${cargo.length}*`,
+        `Total Weight:   *${totalWeight.toLocaleString()} KG*`,
+        ...(dgCount > 0 ? [`Dangerous Goods: *${dgCount}*`] : []),
         ``,
-        `_ראה קובץ מניפסט מצורף_`,
+        `_See attached manifest file_`,
       ];
       const text = msgLines.join('\n');
 
