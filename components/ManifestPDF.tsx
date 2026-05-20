@@ -58,8 +58,8 @@ const S = StyleSheet.create({
   dgBadge:      { backgroundColor: '#fef2f2', color: '#dc2626', padding: '1 5', borderRadius: 3, fontSize: 7.5, fontFamily: 'Helvetica-Bold' },
 });
 
-// Column widths for cargo table
-const COL = { num: '4%', desc: '24%', unit: '13%', cat: '11%', qty: '5%', dim: '13%', wt: '8%', dg: '5%', cond: '7%', status: '10%' };
+// Column widths for cargo table (desc removed — merged into cat)
+const COL = { num: '4%', unit: '14%', cat: '32%', qty: '5%', dim: '13%', wt: '8%', dg: '5%', cond: '7%', status: '12%' };
 
 const condItems = (cargo: ManifestData['cargo']) => cargo.filter(c => c.conditions);
 
@@ -144,9 +144,8 @@ export function ManifestDocument({ data }: { data: ManifestData }) {
           <Text style={S.sectionTitle}>CARGO DETAILS{finalManifest ? ' — FINAL (ACTUALLY LOADED)' : ''}</Text>
           <View style={S.tableHeader}>
             <Text style={[S.th, { width: COL.num }]}>#</Text>
-            <Text style={[S.th, { width: COL.desc }]}>Cargo Description</Text>
             <Text style={[S.th, { width: COL.unit }]}>Unit / Org</Text>
-            <Text style={[S.th, { width: COL.cat }]}>Category</Text>
+            <Text style={[S.th, { width: COL.cat }]}>Category / Details</Text>
             <Text style={[S.th, { width: COL.qty }]}>Qty</Text>
             <Text style={[S.th, { width: COL.dim }]}>Dimensions</Text>
             <Text style={[S.th, { width: COL.wt }]}>Weight</Text>
@@ -157,9 +156,10 @@ export function ManifestDocument({ data }: { data: ManifestData }) {
           {cargo.map((item, i) => (
             <View key={item.requestId} style={i % 2 === 0 ? S.tableRow : S.tableRowAlt}>
               <Text style={[S.td, { width: COL.num }]}>{i + 1}</Text>
-              <Text style={[S.tdBold, { width: COL.desc }]}>{item.cargoDescription || item.categoryDetails || '—'}</Text>
               <Text style={[S.td, { width: COL.unit }]}>{item.unit}</Text>
-              <Text style={[S.td, { width: COL.cat }]}>{item.equipmentCategory}</Text>
+              <Text style={[S.tdBold, { width: COL.cat }]}>
+                {item.equipmentCategory}{item.categoryDetails ? ` — ${item.categoryDetails}` : ''}
+              </Text>
               <Text style={[S.td, { width: COL.qty, textAlign: 'center' }]}>{item.packageCount}</Text>
               <Text style={[S.td, { width: COL.dim }]}>{item.packageDimensions}</Text>
               <Text style={[S.tdBold, { width: COL.wt }]}>{item.totalWeight} KG</Text>
@@ -181,7 +181,7 @@ export function ManifestDocument({ data }: { data: ManifestData }) {
             <Text style={S.reqTitle}>CONDITIONAL CARGO — SPECIAL HANDLING REQUIRED</Text>
             {condItems(cargo).map(item => (
               <Text key={item.requestId} style={[S.reqText, { marginBottom: 2 }]}>
-                • {item.cargoDescription || item.equipmentCategory} ({item.unit}): {item.conditions}
+                • {item.equipmentCategory}{item.categoryDetails ? ` — ${item.categoryDetails}` : ''} ({item.unit}): {item.conditions}
               </Text>
             ))}
           </View>
@@ -195,11 +195,11 @@ export function ManifestDocument({ data }: { data: ManifestData }) {
             </View>
             {dgItems.map(item => (
               <View key={item.requestId} style={S.dgRow}>
-                <Text style={[S.tdBold, { width: '25%' }]}>{item.fullName} · {item.unit}</Text>
-                <Text style={[S.td, { width: '25%' }]}>{item.cargoDescription || item.categoryDetails || '—'}</Text>
-                <Text style={[S.td, { width: '15%' }]}>Class: —</Text>
-                <Text style={[S.td, { width: '20%' }]}>{item.dgDescription || '—'}</Text>
-                <Text style={[S.td, { width: '15%', color: item.dgDocumentsUrl ? '#16a34a' : '#dc2626' }]}>
+                <Text style={[S.tdBold, { width: '30%' }]}>{item.fullName} · {item.unit}</Text>
+                <Text style={[S.td, { width: '50%' }]}>
+                  {item.equipmentCategory}{item.categoryDetails ? ` — ${item.categoryDetails}` : ''}
+                </Text>
+                <Text style={[S.td, { width: '20%', color: item.dgDocumentsUrl ? '#16a34a' : '#dc2626' }]}>
                   Docs: {item.dgDocumentsUrl ? 'Attached' : 'Missing'}
                 </Text>
               </View>

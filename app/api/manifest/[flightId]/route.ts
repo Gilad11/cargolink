@@ -4,7 +4,8 @@ import { join } from 'path';
 import { renderToBuffer } from '@react-pdf/renderer';
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
 import fontkit from '@pdf-lib/fontkit';
-import { getFlightById, getCargoRequestsByFlight, extractDriveFileId, fetchDriveFile } from '@/lib/sheets';
+import sharp from 'sharp';
+import { getFlightById, getCargoRequestsByFlight, extractDriveFileId, fetchDriveFile, fetchDriveFileExport } from '@/lib/sheets';
 import { ManifestDocument } from '@/components/ManifestPDF';
 import { ManifestData, CargoRequest } from '@/lib/types';
 
@@ -61,7 +62,7 @@ async function stampSeal(pdfDoc: PDFDocument) {
   const { width, height } = page.getSize();
 
   const sealImage = await pdfDoc.embedPng(getSealBytes());
-  const sealSize = 130; // points (~46mm) — prominent but not overpowering
+  const sealSize = 80; // points (~28mm)
   const scaled = sealImage.scaleToFit(sealSize, sealSize);
 
   const margin = 28;
@@ -109,9 +110,7 @@ async function makeSeparatorPage(
     { text: item.fullName, size: 16, font },
     { text: item.unit, size: 11, font: regular },
     { text: '', size: 6, font: regular },
-    { text: item.cargoDescription, size: 10, font: regular },
-    { text: `Classification: —`, size: 10, font: regular },
-    { text: `Description: ${item.dgDescription || '—'}`, size: 10, font: regular },
+    { text: item.equipmentCategory + (item.categoryDetails ? ` — ${item.categoryDetails}` : ''), size: 10, font: regular },
     { text: '', size: 6, font: regular },
     { text: docLabel, size: 11, font, color: rgb(0.86, 0.15, 0.15) },
   ];
@@ -140,6 +139,12 @@ async function makeSeparatorPage(
 function isPdf(b: Uint8Array)  { return b[0] === 0x25 && b[1] === 0x50 && b[2] === 0x44 && b[3] === 0x46; } // %PDF
 function isPng(b: Uint8Array)  { return b[0] === 0x89 && b[1] === 0x50 && b[2] === 0x4E && b[3] === 0x47; } // ‰PNG
 function isJpeg(b: Uint8Array) { return b[0] === 0xFF && b[1] === 0xD8 && b[2] === 0xFF; }                   // ÿØÿ
+
+/** Use sharp to convert any image format (HEIC, WebP, TIFF, BMP, etc.) to JPEG bytes. */
+async function toJpeg(bytes: Uint8Array): Promise<Uint8Array> {
+  const buf = await sharp(Buffer.from(bytes)).jpeg({ quality: 90 }).toBuffer();
+  return new Uint8Array(buf);
+}
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ flightId: string }> }) {
   const { flightId } = await params;
@@ -199,10 +204,10 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ flig
       const files = dgFileIds(item);
       for (const { fileId, label } of files) {
         try {
-          // Fetch first — only add pages if this succeeds
           const { bytes, mimeType } = await fetchDriveFile(fileId);
 
           if (isPdf(bytes)) {
+            // ── Native PDF ──────────────────────────────────────────────────
             await makeSeparatorPage(merged, item, label);
             try {
               const certDoc = await PDFDocument.load(bytes, { ignoreEncryption: true });
@@ -211,7 +216,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ flig
             } catch {
               console.warn(`Skipping unreadable PDF for ${item.fullName}`);
             }
+
           } else if (isPng(bytes)) {
+            // ── PNG ─────────────────────────────────────────────────────────
             await makeSeparatorPage(merged, item, label);
             const img = await merged.embedPng(bytes);
             const page = merged.addPage([841.89, 595.28]);
@@ -222,7 +229,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ flig
               width: scaled.width,
               height: scaled.height,
             });
+
           } else if (isJpeg(bytes)) {
+            // ── JPEG ────────────────────────────────────────────────────────
             await makeSeparatorPage(merged, item, label);
             const img = await merged.embedJpg(bytes);
             const page = merged.addPage([841.89, 595.28]);
@@ -233,9 +242,36 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ flig
               width: scaled.width,
               height: scaled.height,
             });
+
+          } else if (mimeType.startsWith('application/vnd.google-apps.')) {
+            // ── Google Workspace native (Docs, Sheets, etc.) → export as PDF ─
+            const pdfBytes = await fetchDriveFileExport(fileId, 'application/pdf');
+            await makeSeparatorPage(merged, item, label);
+            try {
+              const certDoc = await PDFDocument.load(pdfBytes, { ignoreEncryption: true });
+              const certPages = await merged.copyPages(certDoc, certDoc.getPageIndices());
+              certPages.forEach(p => merged.addPage(p));
+            } catch {
+              console.warn(`Skipping unreadable exported Google Doc for ${item.fullName}`);
+            }
+
           } else {
-            // Unknown format (HEIC, WebP, TIFF, etc.) — skip without adding orphaned separator
-            console.warn(`Unsupported file format (${mimeType}) for ${item.fullName}, skipping`);
+            // ── Other formats (HEIC, WebP, TIFF, BMP, …) → convert via sharp ─
+            try {
+              const jpegBytes = await toJpeg(bytes);
+              await makeSeparatorPage(merged, item, label);
+              const img = await merged.embedJpg(jpegBytes);
+              const page = merged.addPage([841.89, 595.28]);
+              const scaled = img.scaleToFit(page.getWidth() - 40, page.getHeight() - 40);
+              page.drawImage(img, {
+                x: (page.getWidth() - scaled.width) / 2,
+                y: (page.getHeight() - scaled.height) / 2,
+                width: scaled.width,
+                height: scaled.height,
+              });
+            } catch {
+              console.warn(`Unsupported/unconvertible format (${mimeType}) for ${item.fullName}, skipping`);
+            }
           }
         } catch (err) {
           // File unavailable — log and skip entirely (no orphaned separator page)

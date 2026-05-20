@@ -108,30 +108,55 @@ export default function FlightDetailPage({ params }: { params: Promise<{ id: str
       if (!res.ok) throw new Error('Failed to generate manifest');
 
       const blob = await res.blob();
-      const file = new File([blob], `manifest-${data.flight.flightNumber}.pdf`, { type: 'application/pdf' });
       const { flight, cargo } = data;
       const totalWeight = cargo.reduce((s, c) => s + c.totalWeight, 0);
-      const text = `✈️ CARGO MANIFEST\nFlight: ${flight.flightNumber}\nRoute: ${flight.departureAirport} → ${flight.destinationAirport}\nDate: ${flight.departureDate} ${flight.departureTime}\nCargo: ${cargo.length} items | ${totalWeight.toLocaleString()} KG`;
+      const dgCount   = cargo.filter(c => c.containsDG).length;
 
-      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      // Formal message with minimal formatting (WhatsApp bold via *)
+      const msgLines = [
+        `*CARGO MANIFEST — ${flight.flightNumber}*`,
+        `--------------------------------`,
+        `מסלול:    ${flight.departureAirport} → ${flight.destinationAirport}`,
+        `תאריך:    ${flight.departureDate}  ${flight.departureTime} (UAE)`,
+        ``,
+        `פריטי מטען:   *${cargo.length}*`,
+        `משקל כולל:    *${totalWeight.toLocaleString()} ק״ג*`,
+        ...(dgCount > 0 ? [`חומרים מסוכנים: *${dgCount}*`] : []),
+        ``,
+        `_ראה קובץ מניפסט מצורף_`,
+      ];
+      const text = msgLines.join('\n');
+
+      // ── Mobile only: native share with file attachment ────────────────────
+      // navigator.share with files fails silently on desktop Chrome — restrict
+      // to touch devices where it actually works.
+      const isTouchDevice = window.matchMedia('(pointer: coarse)').matches;
+      const file = new File([blob], `manifest-${flight.flightNumber}.pdf`, { type: 'application/pdf' });
+      if (isTouchDevice && navigator.canShare && navigator.canShare({ files: [file] })) {
         await navigator.share({ files: [file], title: `Manifest ${flight.flightNumber}`, text });
-      } else {
-        // Fallback: open WhatsApp Web with text
-        const waText = encodeURIComponent(text + '\n\n(הורד מניפסט: ראה קובץ מצורף)');
-        window.open(`https://web.whatsapp.com/send?text=${waText}`, '_blank');
-        // Also trigger PDF download
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `manifest-${flight.flightNumber}.pdf`;
-        a.click();
-        URL.revokeObjectURL(url);
+        return;
       }
+
+      // ── Desktop / fallback ─────────────────────────────────────────────────
+      // 1. Download PDF (no popup permission needed)
+      const objUrl = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = objUrl;
+      a.download = `manifest-${flight.flightNumber}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(objUrl);
+
+      // 2. Open WhatsApp with the formatted message
+      //    wa.me works on mobile app, WhatsApp Desktop and WhatsApp Web
+      window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
     } catch (e) {
       console.error(e);
       alert('שגיאה בשיתוף המניפסט');
+    } finally {
+      setSharing(false);
     }
-    setSharing(false);
   }
 
   async function handleDownloadPDF(finalOnly = false) {

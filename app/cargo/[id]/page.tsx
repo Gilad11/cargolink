@@ -15,7 +15,6 @@ export default function CargoDetailPage({ params }: { params: Promise<{ id: stri
   const [archiving, setArchiving] = useState(false);
   const [notes, setNotes] = useState('');
   const [assignedFlight, setAssignedFlight] = useState('');
-  const [dgDesc, setDgDesc] = useState('');
   const [conditions, setConditions] = useState('');
   const router = useRouter();
 
@@ -27,7 +26,6 @@ export default function CargoDetailPage({ params }: { params: Promise<{ id: stri
       setReq(cargo);
       setNotes(cargo.adminNotes ?? '');
       setAssignedFlight(cargo.assignedFlightId ?? '');
-      setDgDesc(cargo.dgDescription ?? '');
       setConditions(cargo.conditions ?? '');
       setFlights(Array.isArray(flightData) ? flightData : []);
       setLoading(false);
@@ -41,10 +39,10 @@ export default function CargoDetailPage({ params }: { params: Promise<{ id: stri
     const res = await fetch(`/api/cargo/${id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status, adminNotes: notes, assignedFlightId: assignedFlight, dgDescription: dgDesc, conditions }),
+      body: JSON.stringify({ status, adminNotes: notes, assignedFlightId: assignedFlight, conditions }),
     });
     if (res.ok) {
-      setReq(prev => prev ? { ...prev, status, adminNotes: notes, assignedFlightId: assignedFlight, dgDescription: dgDesc } : prev);
+      setReq(prev => prev ? { ...prev, status, adminNotes: notes, assignedFlightId: assignedFlight } : prev);
     }
     setSaving(false);
   }
@@ -67,9 +65,9 @@ export default function CargoDetailPage({ params }: { params: Promise<{ id: stri
     await fetch(`/api/cargo/${id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status: req?.status, adminNotes: notes, assignedFlightId: assignedFlight, dgDescription: dgDesc, conditions }),
+      body: JSON.stringify({ status: req?.status, adminNotes: notes, assignedFlightId: assignedFlight, conditions }),
     });
-    setReq(prev => prev ? { ...prev, adminNotes: notes, assignedFlightId: assignedFlight, dgDescription: dgDesc, conditions } : prev);
+    setReq(prev => prev ? { ...prev, adminNotes: notes, assignedFlightId: assignedFlight, conditions } : prev);
     setSaving(false);
   }
 
@@ -189,15 +187,13 @@ export default function CargoDetailPage({ params }: { params: Promise<{ id: stri
           {req.containsDG && (
             <div className="card p-5 md:col-span-2 border-red-200 bg-red-50">
               <h3 className="font-bold text-red-700 mb-3 text-sm border-b border-red-200 pb-2">חומרים מסוכנים</h3>
-              <div className="grid sm:grid-cols-2 gap-y-2">
-                <InfoRow label="תיאור" value={req.dgDescription || '—'} />
-              </div>
-              <div className="flex flex-wrap gap-2 mt-3">
+              <div className="flex flex-wrap gap-2">
                 {req.dgDocumentsUrl && splitUrls(req.dgDocumentsUrl).map((url, i, arr) => (
                   <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="btn btn-secondary text-xs py-1.5">
                     אישורי DG{arr.length > 1 ? ` (${i + 1})` : ''}
                   </a>
                 ))}
+                {!req.dgDocumentsUrl && <span className="text-sm text-red-600">⚠ לא הועלו אישורי DG</span>}
               </div>
             </div>
           )}
@@ -225,20 +221,6 @@ export default function CargoDetailPage({ params }: { params: Promise<{ id: stri
               </select>
             </div>
 
-            {/* DG fields (editable by admin) */}
-            {req.containsDG && (
-              <div className="mb-4 grid sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-1.5">תיאור DG</label>
-                  <input
-                    className="input"
-                    placeholder="תיאור החומר המסוכן"
-                    value={dgDesc}
-                    onChange={e => setDgDesc(e.target.value)}
-                  />
-                </div>
-              </div>
-            )}
 
             {/* Conditions */}
             <div className="mb-4">
@@ -298,12 +280,12 @@ export default function CargoDetailPage({ params }: { params: Promise<{ id: stri
                 </>
               )}
               {/* Archive / restore */}
-              {req.actuallyLoaded && !req.archived && (
+              {!req.archived && (
                 <button
                   className="btn btn-secondary !border-slate-400 !text-slate-600 hover:!bg-slate-100"
                   disabled={archiving}
                   onClick={toggleArchived}
-                  title="העבר לארכיון — הטיסה הושלמה והמטען נמסר"
+                  title="העבר לארכיון"
                 >
                   {archiving ? 'מעביר...' : '🗄 העבר לארכיון'}
                 </button>

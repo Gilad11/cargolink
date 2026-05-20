@@ -13,20 +13,45 @@ function isConfigured(): boolean {
   }
 }
 
+// ─── Cached singletons ───────────────────────────────────────────────────────
+// Auth and API clients are expensive to create — reuse them across requests
+// within the same serverless function instance.
+
+let _auth: ReturnType<typeof google.auth.GoogleAuth> | null = null;
 function getAuth() {
-  const credentials = JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT_JSON!);
-  return new google.auth.GoogleAuth({
-    credentials,
-    scopes: [
-      'https://www.googleapis.com/auth/spreadsheets',
-      'https://www.googleapis.com/auth/drive.readonly',
-    ],
-  });
+  if (!_auth) {
+    const credentials = JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT_JSON!);
+    _auth = new google.auth.GoogleAuth({
+      credentials,
+      scopes: [
+        'https://www.googleapis.com/auth/spreadsheets',
+        'https://www.googleapis.com/auth/drive.readonly',
+      ],
+    });
+  }
+  return _auth;
 }
 
+let _sheetsClient: ReturnType<typeof google.sheets> | null = null;
 function getSheetsClient() {
-  return google.sheets({ version: 'v4', auth: getAuth() });
+  if (!_sheetsClient) _sheetsClient = google.sheets({ version: 'v4', auth: getAuth() });
+  return _sheetsClient;
 }
+
+let _driveClient: ReturnType<typeof google.drive> | null = null;
+function getDriveClient() {
+  if (!_driveClient) _driveClient = google.drive({ version: 'v3', auth: getAuth() });
+  return _driveClient;
+}
+
+// ─── In-memory cache ─────────────────────────────────────────────────────────
+const CACHE_TTL = 60_000; // 60 seconds
+
+let _cargoCache: { data: CargoRequest[]; ts: number } | null = null;
+let _flightsCache: { data: Flight[]; ts: number } | null = null;
+
+export function invalidateCargoCache()   { _cargoCache   = null; }
+export function invalidateFlightsCache() { _flightsCache = null; }
 
 const SPREADSHEET_ID = process.env.GOOGLE_SHEETS_ID!;
 
@@ -46,6 +71,8 @@ function colLetter(index: number): string {
 
 export async function getAllCargoRequests(): Promise<CargoRequest[]> {
   if (!isConfigured()) return [];
+  if (_cargoCache && Date.now() - _cargoCache.ts < CACHE_TTL) return _cargoCache.data;
+
   const sheets = getSheetsClient();
   const res = await sheets.spreadsheets.values.get({
     spreadsheetId: SPREADSHEET_ID,
@@ -53,14 +80,13 @@ export async function getAllCargoRequests(): Promise<CargoRequest[]> {
   });
 
   const rows = res.data.values ?? [];
-  if (rows.length <= 1) return [];
-
-  // Filter out empty rows (no timestamp in col 0) — these arise when a stray
-  // value exists far down the sheet, causing the API to return blank rows.
-  return rows.slice(1)
+  const data = rows.length <= 1 ? [] : rows.slice(1)
     .map((row, i) => ({ row, rowIndex: i + 2 }))
     .filter(({ row }) => (row[0] ?? '').trim() !== '')
     .map(({ row, rowIndex }) => rowToCargoRequest(row, rowIndex));
+
+  _cargoCache = { data, ts: Date.now() };
+  return data;
 }
 
 export async function getCargoRequestsByFlight(flightId: string): Promise<CargoRequest[]> {
@@ -128,6 +154,7 @@ export async function updateCargoRequest(
   if (fields.archived !== undefined)          updates.push({ colIndex: c.ARCHIVED,            value: String(fields.archived) });
 
   if (updates.length === 0) return;
+  invalidateCargoCache();
 
   // Send all updates in a single batchUpdate call instead of one per field
   await sheets.spreadsheets.values.batchUpdate({
@@ -177,6 +204,8 @@ export async function ensureFlightsSheet() {
 
 export async function getAllFlights(): Promise<Flight[]> {
   if (!isConfigured()) return [];
+  if (_flightsCache && Date.now() - _flightsCache.ts < CACHE_TTL) return _flightsCache.data;
+
   const sheets = getSheetsClient();
   const res = await sheets.spreadsheets.values.get({
     spreadsheetId: SPREADSHEET_ID,
@@ -184,9 +213,9 @@ export async function getAllFlights(): Promise<Flight[]> {
   });
 
   const rows = res.data.values ?? [];
-  if (rows.length <= 1) return [];
-
-  return rows.slice(1).map(rowToFlight).filter(Boolean) as Flight[];
+  const data = rows.length <= 1 ? [] : rows.slice(1).map(rowToFlight).filter(Boolean) as Flight[];
+  _flightsCache = { data, ts: Date.now() };
+  return data;
 }
 
 export async function getFlightById(id: string): Promise<Flight | null> {
@@ -217,7 +246,7 @@ export function rowToFlight(row: string[]): Flight | null {
 }
 
 export async function createFlight(flight: Omit<Flight, 'createdAt'>): Promise<Flight> {
-  await ensureFlightsSheet();
+  invalidateFlightsCache();
   const sheets = getSheetsClient();
   const now = new Date().toISOString();
   const c = FLIGHT_COLS;
@@ -249,15 +278,13 @@ export async function createFlight(flight: Omit<Flight, 'createdAt'>): Promise<F
 }
 
 export async function updateFlight(id: string, fields: Partial<Flight>) {
-  const sheets = getSheetsClient();
-  const res = await sheets.spreadsheets.values.get({
-    spreadsheetId: SPREADSHEET_ID,
-    range: `${SHEET_NAMES.FLIGHTS}!A:A`,
-  });
-  const ids = (res.data.values ?? []).map(r => r[0]);
-  const rowIndex = ids.indexOf(id) + 1;
-  if (rowIndex <= 0) throw new Error('Flight not found');
+  // Use cached flight list to find the row index — avoids extra Sheets read
+  const flights = await getAllFlights();
+  const rowIndex = flights.findIndex(f => f.id === id) + 2; // +2: 1-based + header row
+  if (rowIndex <= 1) throw new Error('Flight not found');
 
+  invalidateFlightsCache();
+  const sheets = getSheetsClient();
   const c = FLIGHT_COLS;
   const updates: { col: number; value: string }[] = [];
   if (fields.status !== undefined)               updates.push({ col: c.STATUS,                value: fields.status });
@@ -269,14 +296,18 @@ export async function updateFlight(id: string, fields: Partial<Flight>) {
   if (fields.coordinatorPhone !== undefined)     updates.push({ col: c.COORDINATOR_PHONE,     value: fields.coordinatorPhone });
   if (fields.loadingRequirements !== undefined)  updates.push({ col: c.LOADING_REQUIREMENTS,  value: fields.loadingRequirements });
 
-  for (const u of updates) {
-    await sheets.spreadsheets.values.update({
-      spreadsheetId: SPREADSHEET_ID,
-      range: `${SHEET_NAMES.FLIGHTS}!${colLetter(u.col)}${rowIndex}`,
+  if (updates.length === 0) return;
+
+  await sheets.spreadsheets.values.batchUpdate({
+    spreadsheetId: SPREADSHEET_ID,
+    requestBody: {
       valueInputOption: 'RAW',
-      requestBody: { values: [[u.value]] },
-    });
-  }
+      data: updates.map(u => ({
+        range: `${SHEET_NAMES.FLIGHTS}!${colLetter(u.col)}${rowIndex}`,
+        values: [[u.value]],
+      })),
+    },
+  });
 }
 
 // ─── Drive file fetching ──────────────────────────────────────────────────────
@@ -295,18 +326,36 @@ export function extractDriveFileId(url: string): string | null {
   return null;
 }
 
+/** Export a Google Workspace native file (Docs, Sheets, etc.) to a specific mimeType.
+ *  Returns the raw bytes of the exported file. */
+export async function fetchDriveFileExport(fileId: string, exportMimeType: string): Promise<Uint8Array> {
+  const drive = getDriveClient();
+  const res = await drive.files.export(
+    { fileId, mimeType: exportMimeType },
+    { responseType: 'stream' },
+  );
+  const chunks: Buffer[] = [];
+  await new Promise<void>((resolve, reject) => {
+    const stream = res.data as unknown as Readable;
+    stream.on('data', (chunk: Buffer) => chunks.push(chunk));
+    stream.on('end', resolve);
+    stream.on('error', reject);
+  });
+  return new Uint8Array(Buffer.concat(chunks));
+}
+
 /** Fetch a file from Google Drive by file ID using the service account.
  *  Returns the raw bytes and mime type. */
 export async function fetchDriveFile(fileId: string): Promise<{ bytes: Uint8Array; mimeType: string }> {
-  const drive = google.drive({ version: 'v3', auth: getAuth() });
+  const drive = getDriveClient();
 
-  const meta = await drive.files.get({ fileId, fields: 'mimeType,name' });
+  // Fetch metadata and content in parallel
+  const [meta, res] = await Promise.all([
+    drive.files.get({ fileId, fields: 'mimeType' }),
+    drive.files.get({ fileId, alt: 'media' }, { responseType: 'stream' }),
+  ]);
+
   const mimeType = meta.data.mimeType ?? 'application/octet-stream';
-
-  const res = await drive.files.get(
-    { fileId, alt: 'media' },
-    { responseType: 'stream' },
-  );
 
   const chunks: Buffer[] = [];
   await new Promise<void>((resolve, reject) => {
