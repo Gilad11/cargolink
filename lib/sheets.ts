@@ -17,7 +17,7 @@ function isConfigured(): boolean {
 // Auth and API clients are expensive to create — reuse them across requests
 // within the same serverless function instance.
 
-let _auth: ReturnType<typeof google.auth.GoogleAuth> | null = null;
+let _auth: InstanceType<typeof google.auth.GoogleAuth> | null = null;
 function getAuth() {
   if (!_auth) {
     const credentials = JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT_JSON!);
