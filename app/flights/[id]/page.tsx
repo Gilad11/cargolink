@@ -123,19 +123,14 @@ export default function FlightDetailPage({ params }: { params: Promise<{ id: str
       ];
       const text = msgLines.join('\n');
 
-      const isTouchDevice = window.matchMedia('(pointer: coarse)').matches;
-
-      // ── Desktop: open WhatsApp BEFORE any await so Chrome doesn't block the popup ──
-      if (!isTouchDevice) {
-        window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
-      }
+      // Open WhatsApp BEFORE any await — preserves user gesture on all platforms
+      window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
 
       // ── Fetch and download the PDF ────────────────────────────────────────
       const res = await fetch(`/api/manifest/${id}`);
       if (!res.ok) throw new Error('Failed to generate manifest');
       const blob = await res.blob();
 
-      // Download PDF
       const objUrl = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = objUrl;
@@ -144,14 +139,6 @@ export default function FlightDetailPage({ params }: { params: Promise<{ id: str
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(objUrl);
-
-      // ── Mobile only: native share with file attachment ────────────────────
-      if (isTouchDevice && navigator.canShare) {
-        const file = new File([blob], `manifest-${flight.flightNumber}.pdf`, { type: 'application/pdf' });
-        if (navigator.canShare({ files: [file] })) {
-          await navigator.share({ files: [file], title: `Manifest ${flight.flightNumber}`, text });
-        }
-      }
     } catch (e) {
       console.error(e);
       alert('שגיאה בשיתוף המניפסט');
