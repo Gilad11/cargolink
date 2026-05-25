@@ -104,15 +104,11 @@ export default function FlightDetailPage({ params }: { params: Promise<{ id: str
     if (!data) return;
     setSharing(true);
     try {
-      const res = await fetch(`/api/manifest/${id}`);
-      if (!res.ok) throw new Error('Failed to generate manifest');
-
-      const blob = await res.blob();
       const { flight, cargo } = data;
       const totalWeight = cargo.reduce((s, c) => s + c.totalWeight, 0);
       const dgCount   = cargo.filter(c => c.containsDG).length;
 
-      // Formal message with minimal formatting (WhatsApp bold via *)
+      // Build message first — synchronously, from already-loaded data
       const msgLines = [
         `*CARGO MANIFEST — ${flight.flightNumber}*`,
         `--------------------------------`,
@@ -127,18 +123,19 @@ export default function FlightDetailPage({ params }: { params: Promise<{ id: str
       ];
       const text = msgLines.join('\n');
 
-      // ── Mobile only: native share with file attachment ────────────────────
-      // navigator.share with files fails silently on desktop Chrome — restrict
-      // to touch devices where it actually works.
       const isTouchDevice = window.matchMedia('(pointer: coarse)').matches;
-      const file = new File([blob], `manifest-${flight.flightNumber}.pdf`, { type: 'application/pdf' });
-      if (isTouchDevice && navigator.canShare && navigator.canShare({ files: [file] })) {
-        await navigator.share({ files: [file], title: `Manifest ${flight.flightNumber}`, text });
-        return;
+
+      // ── Desktop: open WhatsApp BEFORE any await so Chrome doesn't block the popup ──
+      if (!isTouchDevice) {
+        window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
       }
 
-      // ── Desktop / fallback ─────────────────────────────────────────────────
-      // 1. Download PDF (no popup permission needed)
+      // ── Fetch and download the PDF ────────────────────────────────────────
+      const res = await fetch(`/api/manifest/${id}`);
+      if (!res.ok) throw new Error('Failed to generate manifest');
+      const blob = await res.blob();
+
+      // Download PDF
       const objUrl = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = objUrl;
@@ -148,9 +145,13 @@ export default function FlightDetailPage({ params }: { params: Promise<{ id: str
       document.body.removeChild(a);
       URL.revokeObjectURL(objUrl);
 
-      // 2. Open WhatsApp with the formatted message
-      //    wa.me works on mobile app, WhatsApp Desktop and WhatsApp Web
-      window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+      // ── Mobile only: native share with file attachment ────────────────────
+      if (isTouchDevice && navigator.canShare) {
+        const file = new File([blob], `manifest-${flight.flightNumber}.pdf`, { type: 'application/pdf' });
+        if (navigator.canShare({ files: [file] })) {
+          await navigator.share({ files: [file], title: `Manifest ${flight.flightNumber}`, text });
+        }
+      }
     } catch (e) {
       console.error(e);
       alert('שגיאה בשיתוף המניפסט');
