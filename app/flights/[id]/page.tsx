@@ -145,11 +145,6 @@ export default function FlightDetailPage({ params }: { params: Promise<{ id: str
       document.body.removeChild(a);
       URL.revokeObjectURL(objUrl);
 
-      // Desktop: notify user to attach the downloaded PDF manually
-      if (!isTouchDevice) {
-        alert(`הקובץ manifest-${flight.flightNumber}.pdf הורד — צרף אותו ידנית לשיחת הווטסאפ שנפתחה.`);
-      }
-
       // ── Mobile only: native share with file attachment ────────────────────
       if (isTouchDevice && navigator.canShare) {
         const file = new File([blob], `manifest-${flight.flightNumber}.pdf`, { type: 'application/pdf' });
