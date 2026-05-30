@@ -126,7 +126,13 @@ export default function FlightDetailPage({ params }: { params: Promise<{ id: str
       // Open WhatsApp BEFORE any await — preserves user gesture on all platforms
       window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
 
-      // ── Fetch and download the PDF ────────────────────────────────────────
+      // On mobile (iOS/Android) skip the PDF download — the blob <a> click
+      // triggers the iOS share sheet which confuses the flow. The user can
+      // download the PDF separately via the Download button.
+      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+      if (isMobile) return;
+
+      // ── Desktop: fetch and download the PDF ──────────────────────────────
       const res = await fetch(`/api/manifest/${id}`);
       if (!res.ok) throw new Error('Failed to generate manifest');
       const blob = await res.blob();
