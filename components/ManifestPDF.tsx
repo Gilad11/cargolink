@@ -27,10 +27,10 @@ const S = StyleSheet.create({
 
   // Table
   table:        { marginBottom: 14 },
-  tableHeader:  { flexDirection: 'row', backgroundColor: '#1e40af', color: 'white', padding: '5 6', borderRadius: '4 4 0 0' },
-  tableRow:     { flexDirection: 'row', padding: '4 6', borderBottom: '1px solid #f1f5f9' },
-  tableRowAlt:  { flexDirection: 'row', padding: '4 6', borderBottom: '1px solid #f1f5f9', backgroundColor: '#f8fafc' },
-  tableFooter:  { flexDirection: 'row', padding: '5 6', backgroundColor: '#e2e8f0', borderRadius: '0 0 4 4' },
+  tableHeader:  { flexDirection: 'row', alignItems: 'flex-start', backgroundColor: '#1e40af', color: 'white', padding: '5 6', borderRadius: '4 4 0 0' },
+  tableRow:     { flexDirection: 'row', alignItems: 'flex-start', padding: '4 6', borderBottom: '1px solid #f1f5f9' },
+  tableRowAlt:  { flexDirection: 'row', alignItems: 'flex-start', padding: '4 6', borderBottom: '1px solid #f1f5f9', backgroundColor: '#f8fafc' },
+  tableFooter:  { flexDirection: 'row', alignItems: 'flex-start', padding: '5 6', backgroundColor: '#e2e8f0', borderRadius: '0 0 4 4' },
   th:           { fontFamily: 'Helvetica-Bold', fontSize: 7.5, color: 'white' },
   td:           { fontSize: 8, color: '#1e293b' },
   tdBold:       { fontSize: 8, fontFamily: 'Helvetica-Bold', color: '#1e293b' },
@@ -39,7 +39,7 @@ const S = StyleSheet.create({
   dgSection:    { marginBottom: 14, border: '1px solid #fecaca', borderRadius: 6, overflow: 'hidden' },
   dgHeader:     { backgroundColor: '#fef2f2', padding: '5 8', borderBottom: '1px solid #fecaca' },
   dgTitle:      { fontFamily: 'Helvetica-Bold', fontSize: 9, color: '#dc2626' },
-  dgRow:        { flexDirection: 'row', padding: '4 8', borderBottom: '1px solid #fef2f2' },
+  dgRow:        { flexDirection: 'row', alignItems: 'flex-start', padding: '4 8', borderBottom: '1px solid #fef2f2' },
 
   // Requirements box (#3)
   reqBox:       { marginBottom: 14, border: '1px solid #fde68a', borderRadius: 6, backgroundColor: '#fffbeb', padding: '6 10' },
@@ -143,30 +143,31 @@ export function ManifestDocument({ data }: { data: ManifestData }) {
         <View style={S.table}>
           <Text style={S.sectionTitle}>CARGO DETAILS{finalManifest ? ' — FINAL (ACTUALLY LOADED)' : ''}</Text>
           <View style={S.tableHeader}>
-            <Text style={[S.th, { width: COL.num }]}>#</Text>
-            <Text style={[S.th, { width: COL.unit }]}>Unit / Org</Text>
-            <Text style={[S.th, { width: COL.cat }]}>Category / Details</Text>
-            <Text style={[S.th, { width: COL.qty }]}>Qty</Text>
-            <Text style={[S.th, { width: COL.dim }]}>Dimensions</Text>
-            <Text style={[S.th, { width: COL.wt }]}>Weight</Text>
-            <Text style={[S.th, { width: COL.dg }]}>DG</Text>
-            <Text style={[S.th, { width: COL.cond }]}>Cond.</Text>
-            <Text style={[S.th, { width: COL.status }]}>Status</Text>
+            <View style={{ width: COL.num  }}><Text style={S.th}>#</Text></View>
+            <View style={{ width: COL.unit }}><Text style={S.th}>Unit / Org</Text></View>
+            <View style={{ width: COL.cat  }}><Text style={S.th}>Category / Details</Text></View>
+            <View style={{ width: COL.qty  }}><Text style={S.th}>Qty</Text></View>
+            <View style={{ width: COL.dim  }}><Text style={S.th}>Dimensions</Text></View>
+            <View style={{ width: COL.wt   }}><Text style={S.th}>Weight</Text></View>
+            <View style={{ width: COL.dg   }}><Text style={S.th}>DG</Text></View>
+            <View style={{ width: COL.cond }}><Text style={S.th}>Cond.</Text></View>
+            <View style={{ width: COL.status }}><Text style={S.th}>Status</Text></View>
           </View>
           {cargo.map((item, i) => (
             <View key={item.requestId} style={i % 2 === 0 ? S.tableRow : S.tableRowAlt}>
-              <Text style={[S.td, { width: COL.num }]}>{i + 1}</Text>
-              <Text style={[S.td, { width: COL.unit }]}>{item.unit}</Text>
-              <Text style={[S.tdBold, { width: COL.cat }]}>
-                {item.equipmentCategory}{item.categoryDetails ? ` — ${item.categoryDetails}` : ''}
-              </Text>
-              <Text style={[S.td, { width: COL.qty, textAlign: 'center' }]}>{item.packageCount}</Text>
-              <Text style={[S.td, { width: COL.dim }]}>{item.packageDimensions}</Text>
-              <Text style={[S.tdBold, { width: COL.wt }]}>{item.totalWeight} KG</Text>
-              <Text style={[item.containsDG ? S.dgBadge : S.td, { width: COL.dg }]}>{item.containsDG ? 'YES' : 'No'}</Text>
-              {/* #4 conditions */}
-              <Text style={[item.conditions ? S.condBadge : S.td, { width: COL.cond }]}>{item.conditions ? 'COND' : '—'}</Text>
-              <Text style={[S.approved, { width: COL.status }]}>{finalManifest ? 'Loaded' : 'Approved'}</Text>
+              <View style={{ width: COL.num  }}><Text style={S.td}>{i + 1}</Text></View>
+              <View style={{ width: COL.unit }}><Text style={S.td}>{item.unit}</Text></View>
+              <View style={{ width: COL.cat  }}>
+                <Text style={S.tdBold}>
+                  {item.equipmentCategory}{item.categoryDetails ? ` — ${item.categoryDetails}` : ''}
+                </Text>
+              </View>
+              <View style={{ width: COL.qty  }}><Text style={[S.td, { textAlign: 'center' }]}>{item.packageCount}</Text></View>
+              <View style={{ width: COL.dim  }}><Text style={S.td}>{item.packageDimensions}</Text></View>
+              <View style={{ width: COL.wt   }}><Text style={S.tdBold}>{item.totalWeight} KG</Text></View>
+              <View style={{ width: COL.dg   }}><Text style={item.containsDG ? S.dgBadge : S.td}>{item.containsDG ? 'YES' : 'No'}</Text></View>
+              <View style={{ width: COL.cond }}><Text style={item.conditions ? S.condBadge : S.td}>{item.conditions ? 'COND' : '—'}</Text></View>
+              <View style={{ width: COL.status }}><Text style={S.approved}>{finalManifest ? 'Loaded' : 'Approved'}</Text></View>
             </View>
           ))}
           <View style={S.tableFooter}>
@@ -195,13 +196,15 @@ export function ManifestDocument({ data }: { data: ManifestData }) {
             </View>
             {dgItems.map(item => (
               <View key={item.requestId} style={S.dgRow}>
-                <Text style={[S.tdBold, { width: '30%' }]}>{item.fullName} · {item.unit}</Text>
-                <Text style={[S.td, { width: '50%' }]}>
-                  {item.equipmentCategory}{item.categoryDetails ? ` — ${item.categoryDetails}` : ''}
-                </Text>
-                <Text style={[S.td, { width: '20%', color: item.dgDocumentsUrl ? '#16a34a' : '#dc2626' }]}>
-                  Docs: {item.dgDocumentsUrl ? 'Attached' : 'Missing'}
-                </Text>
+                <View style={{ width: '30%' }}><Text style={S.tdBold}>{item.fullName} · {item.unit}</Text></View>
+                <View style={{ width: '50%' }}>
+                  <Text style={S.td}>{item.equipmentCategory}{item.categoryDetails ? ` — ${item.categoryDetails}` : ''}</Text>
+                </View>
+                <View style={{ width: '20%' }}>
+                  <Text style={[S.td, { color: item.dgDocumentsUrl ? '#16a34a' : '#dc2626' }]}>
+                    Docs: {item.dgDocumentsUrl ? 'Attached' : 'Missing'}
+                  </Text>
+                </View>
               </View>
             ))}
           </View>
